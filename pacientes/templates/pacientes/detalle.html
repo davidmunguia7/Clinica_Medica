@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paciente.nombre_completo }} · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-4 print:hidden">
+    <a href="{% url 'pacientes:lista' %}" class="text-sm font-medium text-teal-700 hover:underline">← Volver a la lista</a>
+</div>
+
+<p class="mb-2 hidden text-center text-lg font-bold print:block">Clínica Familiar — Ficha de identificación del paciente</p>
+
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:border-slate-400 print:shadow-none">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <p class="text-sm font-semibold text-teal-700">Expediente n.° {{ historial.numero_expediente }}</p>
+            <h1 class="text-2xl font-bold text-slate-900">{{ paciente.nombre_completo }}</h1>
+            {% if paciente.conocido_por %}<p class="text-slate-600">Conocido(a) por: {{ paciente.conocido_por }}</p>{% endif %}
+            <div class="mt-3 flex flex-wrap gap-2 text-sm">
+                <span class="rounded-full bg-slate-100 px-3 py-1">{{ paciente.edad_texto }}</span>
+                <span class="rounded-full bg-slate-100 px-3 py-1">{{ paciente.get_sexo_display }}</span>
+                <span class="rounded-full bg-slate-100 px-3 py-1">{{ paciente.get_tipo_documento_display }}{% if paciente.numero_documento %}: {{ paciente.numero_documento }}{% endif %}</span>
+                {% if paciente.es_menor %}<span class="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-900">Menor de edad</span>{% endif %}
+                {% if not paciente.activo %}<span class="rounded-full bg-red-100 px-3 py-1 font-medium text-red-800">Dado de baja</span>{% endif %}
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 print:hidden">
+            {% if perms.pacientes.change_paciente %}
+            <a href="{% url 'pacientes:editar' paciente.pk %}" class="inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-teal-800">Editar datos</a>
+            {% endif %}
+            <button type="button" onclick="window.print()" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-base font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Imprimir ficha</button>
+        </div>
+    </div>
+
+    {% if historial.alergias %}
+    <div role="alert" class="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-red-900">
+        <p class="font-semibold">Alergias</p>
+        <p class="whitespace-pre-line">{{ historial.alergias }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2 print:mt-3 print:gap-3">
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
+        <h2 class="text-lg font-semibold text-slate-900">Datos personales</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Fecha de nacimiento" valor=paciente.fecha_nacimiento|date:"d/m/Y" %}
+            {% include "pacientes/_dato.html" with etiqueta="Nacionalidad" valor=paciente.get_nacionalidad_display %}
+            {% if paciente.pais_origen %}{% include "pacientes/_dato.html" with etiqueta="País de origen" valor=paciente.pais_origen %}{% endif %}
+            {% if paciente.distrito_nacimiento %}
+            {% with d=paciente.distrito_nacimiento %}
+            {% include "pacientes/_dato.html" with etiqueta="Lugar de nacimiento" valor=d.nombre|add:", "|add:d.municipio.nombre|add:", "|add:d.municipio.departamento.nombre %}
+            {% endwith %}
+            {% endif %}
+            {% include "pacientes/_dato.html" with etiqueta="Estado civil" valor=paciente.get_estado_civil_display %}
+            {% include "pacientes/_dato.html" with etiqueta="Ocupación" valor=paciente.ocupacion %}
+        </dl>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
+        <h2 class="text-lg font-semibold text-slate-900">Domicilio y contacto</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Dirección" valor=paciente.direccion %}
+            {% include "pacientes/_dato.html" with etiqueta="Punto de referencia" valor=paciente.punto_referencia %}
+            {% with d=paciente.distrito %}
+            {% include "pacientes/_dato.html" with etiqueta="Distrito / municipio" valor=d.nombre|add:", "|add:d.municipio.nombre %}
+            {% include "pacientes/_dato.html" with etiqueta="Departamento" valor=d.municipio.departamento.nombre %}
+            {% endwith %}
+            {% include "pacientes/_dato.html" with etiqueta="Área" valor=paciente.get_area_display %}
+            {% include "pacientes/_dato.html" with etiqueta="Teléfono" valor=paciente.telefono %}
+            {% include "pacientes/_dato.html" with etiqueta="Teléfono alterno" valor=paciente.telefono_alterno %}
+            {% include "pacientes/_dato.html" with etiqueta="Correo" valor=paciente.correo %}
+            {% include "pacientes/_dato.html" with etiqueta="Afiliación" valor=paciente.get_afiliacion_display %}
+            {% if paciente.numero_afiliacion %}{% include "pacientes/_dato.html" with etiqueta="N.° de afiliación" valor=paciente.numero_afiliacion %}{% endif %}
+        </dl>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
+        <h2 class="text-lg font-semibold text-slate-900">Familia y responsable</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Madre" valor=paciente.nombre_madre %}
+            {% include "pacientes/_dato.html" with etiqueta="Padre" valor=paciente.nombre_padre %}
+            {% include "pacientes/_dato.html" with etiqueta="Responsable" valor=paciente.responsable_nombre %}
+            {% include "pacientes/_dato.html" with etiqueta="Parentesco" valor=paciente.get_responsable_parentesco_display %}
+            {% include "pacientes/_dato.html" with etiqueta="DUI del responsable" valor=paciente.responsable_dui %}
+            {% include "pacientes/_dato.html" with etiqueta="Teléfono del responsable" valor=paciente.responsable_telefono %}
+        </dl>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
+        <h2 class="text-lg font-semibold text-slate-900">Historial clínico</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Tipo de sangre" valor=historial.tipo_sangre|default:"No sabe" %}
+            {% include "pacientes/_dato.html" with etiqueta="Alergias" valor=historial.alergias|default:"No refiere" %}
+            {% include "pacientes/_dato.html" with etiqueta="Enfermedades crónicas" valor=historial.enfermedades_cronicas %}
+            {% include "pacientes/_dato.html" with etiqueta="Medicamentos de uso continuo" valor=historial.medicamentos_actuales %}
+            {% include "pacientes/_dato.html" with etiqueta="Antecedentes personales" valor=historial.antecedentes_personales %}
+            {% include "pacientes/_dato.html" with etiqueta="Antecedentes familiares" valor=historial.antecedentes_familiares %}
+        </dl>
+    </section>
+</div>
+
+<section class="mt-6 rounded-xl border border-dashed border-slate-300 bg-white p-5 print:hidden">
+    <h2 class="text-lg font-semibold text-slate-900">Consultas</h2>
+    <p class="mt-1 text-sm text-slate-500">Aquí se mostrarán las consultas del paciente cuando se integre el módulo de consultas (HU-02).</p>
+</section>
+
+<section class="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:mt-3 print:shadow-none">
+    <h2 class="text-lg font-semibold text-slate-900">Datos del registro</h2>
+    <dl class="mt-2 divide-y divide-slate-100">
+        {% include "pacientes/_dato.html" with etiqueta="Fecha y hora de registro" valor=paciente.fecha_registro|date:"d/m/Y H:i" %}
+        {% if paciente.registrado_por %}
+        {% include "pacientes/_dato.html" with etiqueta="Registrado por" valor=paciente.registrado_por.get_full_name|default:paciente.registrado_por.username %}
+        {% else %}
+        {% include "pacientes/_dato.html" with etiqueta="Registrado por" valor="" %}
+        {% endif %}
+        {% include "pacientes/_dato.html" with etiqueta="Datos proporcionados por" valor=paciente.datos_proporcionados_por|default:"El mismo paciente" %}
+        {% include "pacientes/_dato.html" with etiqueta="Observaciones" valor=paciente.observaciones %}
+        {% if paciente.consentimiento_datos %}
+        {% with fecha=paciente.fecha_consentimiento|date:"d/m/Y" %}
+        {% include "pacientes/_dato.html" with etiqueta="Consentimiento de datos" valor="Firmado (registrado el "|add:fecha|add:")" %}
+        {% endwith %}
+        {% else %}
+        {% include "pacientes/_dato.html" with etiqueta="Consentimiento de datos" valor="Pendiente de firma" %}
+        {% endif %}
+        {% include "pacientes/_dato.html" with etiqueta="Última actualización" valor=paciente.fecha_actualizacion|date:"d/m/Y H:i" %}
+    </dl>
+</section>
+
+{# Solo al imprimir: consentimiento escrito (Ley para la Protección de Datos Personales, D. L. 144, 2024) #}
+<section class="hidden print:mt-6 print:block">
+    <p class="text-sm leading-relaxed">
+        Declaro que los datos anteriores son verdaderos y autorizo a la Clínica Familiar a tratar mis datos personales
+        y de salud (o los de la persona que represento) únicamente para mi atención médica y la gestión de mi expediente
+        clínico, conforme a la Ley para la Protección de Datos Personales. Sé que puedo pedir acceso, corrección o
+        eliminación de mis datos cuando la ley lo permita.
+    </p>
+    <div class="mt-12 grid grid-cols-3 gap-8 text-center text-sm">
+        <div class="border-t border-slate-800 pt-1">Firma del paciente o responsable</div>
+        <div class="border-t border-slate-800 pt-1">DUI</div>
+        <div class="border-t border-slate-800 pt-1">Fecha</div>
+    </div>
+</section>
+
+{% if perms.pacientes.change_paciente %}
+<form method="post" action="{% url 'pacientes:cambiar_estado' paciente.pk %}" class="mt-6 flex justify-end print:hidden"
+      onsubmit="return confirm('{% if paciente.activo %}¿Dar de baja a este paciente? Su expediente se conserva.{% else %}¿Reactivar a este paciente?{% endif %}');">
+    {% csrf_token %}
+    {% if paciente.activo %}
+    <button type="submit" class="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50">Dar de baja</button>
+    {% else %}
+    <button type="submit" class="rounded-lg border border-teal-300 bg-white px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50">Reactivar paciente</button>
+    {% endif %}
+</form>
+{% endif %}
+{% endblock %}

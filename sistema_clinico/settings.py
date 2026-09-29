@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Tailwind CSS
+    'tailwind',
+    'theme',
 ]
 
 MIDDLEWARE = [
@@ -76,7 +80,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': 'clinica_familiar',
-        'HOST': 'ELIEZERRDR\SQLEXPRESS', # Si usas una instancia nombrada, a veces es '.\SQLEXPRESS'
+        'HOST': r'7GUERRERO\SQLEXPRESS', # <-- cada quien pone aquí su propia instancia (ve la tuya en SSMS al conectar)
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
             'extra_params': 'Trusted_Connection=yes;',
@@ -119,6 +123,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Tailwind CSS
+TAILWIND_APP_NAME = 'theme'
+INTERNAL_IPS = ['127.0.0.1']
 
 
 # Email

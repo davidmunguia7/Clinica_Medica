@@ -10,10 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Cada integrante tiene su propio archivo .env (no se sube a GitHub).
+# Copien .env.example como .env y pongan ahí su instancia de SQL Server.
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -41,6 +48,9 @@ INSTALLED_APPS = [
     # Tailwind CSS
     'tailwind',
     'theme',
+
+    # Módulos del sistema
+    'inventario',
 ]
 
 MIDDLEWARE = [
@@ -79,8 +89,8 @@ WSGI_APPLICATION = 'sistema_clinico.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'mssql',
-        'NAME': 'clinica_familiar',
-        'HOST': r'7GUERRERO\SQLEXPRESS', # <-- cada quien pone aquí su propia instancia (ve la tuya en SSMS al conectar)
+        'NAME': os.getenv('DB_NAME', 'clinica_familiar'),
+        'HOST': os.getenv('DB_HOST', r'localhost\SQLEXPRESS'),  # se define en .env
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
             'extra_params': 'Trusted_Connection=yes;',
@@ -110,9 +120,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/El_Salvador'
 
 USE_I18N = True
 

@@ -1,19 +1,43 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <title>Django Tailwind</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}Clínica{% endblock %} · Sistema Clínico</title>
     {% tailwind_css %}
 </head>
+<body class="min-h-screen bg-slate-100 text-slate-800 antialiased">
+    <header class="border-b border-slate-200 bg-white">
+        <nav class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+            <a href="/" class="mr-4 font-semibold text-teal-800">Sistema Clínico</a>
+            {# Cada módulo agrega aquí su enlace cuando exista su URL #}
+            {% url 'inventario:producto_lista' as url_inventario %}
+            <a href="{{ url_inventario }}"
+               class="text-sm {% if request.path|slice:':12' == '/inventario/' %}font-semibold text-teal-800{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+                Inventario
+            </a>
+            {% block nav_extra %}{% endblock %}
+            <div class="ml-auto text-sm text-slate-500">
+                {% if user.is_authenticated %}{{ user.get_username }}{% endif %}
+            </div>
+        </nav>
+    </header>
 
-<body class="bg-gray-50 text-black font-serif leading-normal tracking-normal">
-<div class="container mx-auto">
-    <section class="flex items-center justify-center h-screen">
-        <h1 class="text-5xl">Django + Tailwind = ❤️</h1>
-    </section>
-</div>
+    <main class="mx-auto max-w-6xl px-4 py-8">
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <p class="rounded-md border px-4 py-3 text-sm
+                {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800
+                {% else %}border-teal-200 bg-teal-50 text-teal-900{% endif %}">
+                {{ message }}
+            </p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>

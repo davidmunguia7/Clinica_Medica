@@ -41,7 +41,9 @@ INSTALLED_APPS = [
     # Tailwind CSS
     'tailwind',
     'theme',
+    'usuarios',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -137,3 +139,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+AUTH_USER_MODEL = 'usuarios.Usuario'

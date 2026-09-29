@@ -1,0 +1,4 @@
+Django>=5.1,<6.0
+mssql-django>=1.5
+pyodbc>=5.1
+django-tailwind[reload]>=3.8

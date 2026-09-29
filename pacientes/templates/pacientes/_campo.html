@@ -1,0 +1,22 @@
+{% comment %}
+Muestra un campo del formulario con su etiqueta, ayuda y errores.
+Uso: {% include "pacientes/_campo.html" with campo=form.nombres %}
+Opcionales: clase="sm:col-span-2" (clases del contenedor) y
+menor=True (marca el campo como obligatorio solo para menores de 18 años) y
+sin_paso=True (cuando el campo va dentro de un paso del asistente que agrupa varios).
+{% endcomment %}
+<div{% if not sin_paso %} data-paso{% endif %}{% if clase %} class="{{ clase }}"{% endif %}>
+    {% if campo.widget_type == "checkbox" %}
+    <label for="{{ campo.id_for_label }}" class="flex cursor-pointer items-start gap-3">
+        {{ campo }}
+        <span class="text-sm text-slate-700">{{ campo.label }}{% if campo.field.required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}</span>
+    </label>
+    {% else %}
+    <label for="{{ campo.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">
+        {{ campo.label }}{% if campo.field.required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}{% if menor %}<span class="text-red-600" data-solo-menores hidden> *</span>{% endif %}
+    </label>
+    {{ campo }}
+    {% endif %}
+    {% if campo.help_text %}<p class="mt-1 text-xs text-slate-500">{{ campo.help_text }}</p>{% endif %}
+    {% for error in campo.errors %}<p class="mt-1 text-sm font-medium text-red-700">{{ error }}</p>{% endfor %}
+</div>

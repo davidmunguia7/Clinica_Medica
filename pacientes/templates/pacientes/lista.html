@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Pacientes · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900">Pacientes</h1>
+    {% if perms.pacientes.add_paciente %}
+    <a href="{% url 'pacientes:registrar' %}" class="inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">+ Registrar paciente</a>
+    {% endif %}
+</div>
+
+<form method="get" role="search" class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <label for="q" class="mb-1 block text-sm font-medium text-slate-700">Buscar por nombre, documento (DUI, NUI, pasaporte…) o número de expediente</label>
+    <div class="flex flex-col gap-2 sm:flex-row">
+        <input id="q" name="q" type="search" value="{{ consulta }}" autofocus autocomplete="off"
+               placeholder="Ej.: María Pérez, 01234567-8 o 2026-000015"
+               class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30">
+        <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2">Buscar</button>
+        {% if consulta or incluir_inactivos %}
+        <a href="{% url 'pacientes:lista' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-base font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Limpiar</a>
+        {% endif %}
+    </div>
+    <label class="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-600">
+        <input type="checkbox" name="inactivos" value="1" {% if incluir_inactivos %}checked{% endif %} class="h-4 w-4 accent-teal-700">
+        Incluir pacientes dados de baja
+    </label>
+</form>
+
+{% if pagina.object_list %}
+<p class="mb-2 text-sm text-slate-500">
+    {% if consulta %}{{ pagina.paginator.count }} resultado{{ pagina.paginator.count|pluralize }} para «{{ consulta }}»{% else %}Últimos pacientes registrados{% endif %}
+</p>
+<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <tr>
+                <th scope="col" class="px-4 py-3">Expediente</th>
+                <th scope="col" class="px-4 py-3">Nombre</th>
+                <th scope="col" class="px-4 py-3">Documento</th>
+                <th scope="col" class="px-4 py-3">Edad</th>
+                <th scope="col" class="px-4 py-3">Teléfono</th>
+                <th scope="col" class="px-4 py-3">Domicilio</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for p in pagina %}
+            <tr class="hover:bg-teal-50{% if not p.activo %} text-slate-400{% endif %}">
+                <td class="whitespace-nowrap px-4 py-3 font-mono">{{ p.numero_expediente }}</td>
+                <td class="px-4 py-3">
+                    <a href="{{ p.get_absolute_url }}" class="font-medium text-teal-800 hover:underline">{{ p.nombre_completo }}</a>
+                    {% if not p.activo %}<span class="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">De baja</span>{% endif %}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">{% if p.numero_documento %}{{ p.tipo_documento }} {{ p.numero_documento }}{% else %}—{% endif %}</td>
+                <td class="whitespace-nowrap px-4 py-3">{{ p.edad_texto }}</td>
+                <td class="whitespace-nowrap px-4 py-3">{{ p.telefono }}</td>
+                <td class="px-4 py-3">{{ p.distrito.nombre }}, {{ p.distrito.municipio.departamento.nombre }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if pagina.has_other_pages %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Páginas">
+    {% if pagina.has_previous %}
+    <a href="{% querystring pagina=pagina.previous_page_number %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700 hover:bg-slate-50">← Anterior</a>
+    {% else %}<span></span>{% endif %}
+    <span class="text-slate-500">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="{% querystring pagina=pagina.next_page_number %}" class="rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700 hover:bg-slate-50">Siguiente →</a>
+    {% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+
+{% else %}
+<div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+    {% if consulta %}
+    <p class="text-lg font-medium text-slate-800">No se encontró ningún paciente con «{{ consulta }}».</p>
+    <p class="mt-1 text-sm text-slate-500">Pruebe con otro nombre, el número de documento o el número de expediente.</p>
+    {% else %}
+    <p class="text-lg font-medium text-slate-800">Todavía no hay pacientes registrados.</p>
+    {% endif %}
+    {% if perms.pacientes.add_paciente %}
+    <a href="{% url 'pacientes:registrar' %}" class="mt-4 inline-flex items-center justify-center rounded-lg bg-teal-700 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-teal-800">Registrar paciente</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     # Tailwind CSS
     'tailwind',
     'theme',
+
+    # Módulos del sistema
+    'pacientes',
 ]
 
 MIDDLEWARE = [
@@ -110,9 +113,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/El_Salvador'
 
 USE_I18N = True
 
@@ -127,6 +130,10 @@ STATIC_URL = 'static/'
 # Tailwind CSS
 TAILWIND_APP_NAME = 'theme'
 INTERNAL_IPS = ['127.0.0.1']
+
+# Inicio de sesión: por ahora se usa la pantalla del admin de Django.
+# Cambiarlo cuando el módulo de login con roles (HU-05) tenga su propia pantalla.
+LOGIN_URL = 'admin:login'
 
 
 # Email

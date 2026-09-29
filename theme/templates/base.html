@@ -1,19 +1,48 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <title>Django Tailwind</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}Clínica Familiar{% endblock %}</title>
     {% tailwind_css %}
+    {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 text-black font-serif leading-normal tracking-normal">
-<div class="container mx-auto">
-    <section class="flex items-center justify-center h-screen">
-        <h1 class="text-5xl">Django + Tailwind = ❤️</h1>
-    </section>
-</div>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased print:bg-white">
+    {% url 'pacientes:lista' as url_pacientes %}
+    <header class="bg-teal-800 text-white shadow print:hidden">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <a href="{{ url_pacientes|default:'/' }}" class="text-lg font-semibold tracking-tight">Clínica Familiar</a>
+            {% if user.is_authenticated %}
+            <nav class="flex items-center gap-3 text-sm" aria-label="Menú principal">
+                {% if url_pacientes %}
+                <a href="{{ url_pacientes }}" class="rounded-md px-3 py-2 font-medium hover:bg-teal-700">Pacientes</a>
+                {% endif %}
+                <span class="hidden text-teal-100 sm:inline">{{ user.get_full_name|default:user.username }}</span>
+                <form method="post" action="{% url 'admin:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-md border border-teal-600 px-3 py-1.5 font-medium hover:bg-teal-700">Salir</button>
+                </form>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
+        {% if messages %}
+        <div class="mb-6 space-y-2 print:hidden">
+            {% for message in messages %}
+            <div role="alert" class="rounded-lg border px-4 py-3 text-sm font-medium {% if message.level_tag == 'success' %}border-green-200 bg-green-50 text-green-800{% elif message.level_tag == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.level_tag == 'warning' %}border-amber-200 bg-amber-50 text-amber-800{% else %}border-sky-200 bg-sky-50 text-sky-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

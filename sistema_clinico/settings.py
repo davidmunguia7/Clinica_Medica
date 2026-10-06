@@ -48,10 +48,13 @@ INSTALLED_APPS = [
     # Tailwind CSS
     'tailwind',
     'theme',
+    'usuarios',
 
     # Módulos del sistema
+    'pacientes',
     'inventario',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -138,6 +141,10 @@ STATIC_URL = 'static/'
 TAILWIND_APP_NAME = 'theme'
 INTERNAL_IPS = ['127.0.0.1']
 
+# Inicio de sesión: por ahora se usa la pantalla del admin de Django.
+# Cambiarlo cuando el módulo de login con roles (HU-05) tenga su propia pantalla.
+LOGIN_URL = 'admin:login'
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -147,3 +154,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+AUTH_USER_MODEL = 'usuarios.Usuario'

@@ -1,72 +1,86 @@
 {% extends "base.html" %}
-{% block title %}Inventario{% endblock %}
+{% block title %}Inventario · Clínica Familiar{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
     <div>
-        <h1 class="text-2xl font-semibold text-slate-900">Inventario</h1>
-        <p class="text-sm text-slate-500">Medicamentos e insumos de la clínica</p>
+        <h1 class="text-3xl font-extrabold text-marino">Inventario</h1>
+        <p class="mt-1 text-slate-600">Medicamentos e insumos de la clínica.</p>
     </div>
-    <div class="flex gap-2">
-        <a href="{% url 'inventario:movimiento_lista' %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">Ver movimientos</a>
-        <a href="{% url 'inventario:producto_crear' %}" class="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">Agregar producto</a>
+    <div class="flex flex-wrap gap-2">
+        {% if perms.inventario.view_movimiento %}
+        <a href="{% url 'inventario:movimiento_lista' %}" class="btn btn-secundario">Ver movimientos</a>
+        {% endif %}
+        {% if perms.inventario.add_producto %}
+        <a href="{% url 'inventario:producto_crear' %}" class="btn btn-acento">+ Agregar producto</a>
+        {% endif %}
     </div>
 </div>
 
-{% if lotes_vencidos or lotes_por_vencer %}
-<section class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
-    <h2 class="mb-2 font-semibold text-amber-900">Revisar vencimientos</h2>
-    <ul class="space-y-1 text-amber-900">
+{% if lotes_vencidos or lotes_por_vencer or total_bajo_minimo %}
+<section class="mb-6 rounded-2xl border border-coral/40 bg-coral-claro p-5 text-sm" aria-labelledby="titulo-alertas">
+    <h2 id="titulo-alertas" class="mb-2 font-bold text-gris-oscuro">Revisar</h2>
+    <ul class="space-y-1 text-gris-oscuro">
         {% for l in lotes_vencidos %}
-        <li><strong class="text-red-700">Vencido</strong> — {{ l.producto.nombre }}, lote {{ l.numero_lote }} ({{ l.cantidad_actual }} en existencia, venció el {{ l.fecha_vencimiento|date:"d/m/Y" }})</li>
+        <li><span class="insignia mr-1 bg-red-50 px-2 py-0.5 text-xs text-red-700">Vencido</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }}: {{ l.cantidad_actual }} en existencia, venció el {{ l.fecha_vencimiento|date:"d/m/Y" }}.</li>
         {% endfor %}
         {% for l in lotes_por_vencer %}
-        <li>{{ l.producto.nombre }}, lote {{ l.numero_lote }} vence el {{ l.fecha_vencimiento|date:"d/m/Y" }} ({{ l.cantidad_actual }} en existencia)</li>
+        <li><span class="insignia mr-1 bg-white px-2 py-0.5 text-xs text-coral-oscuro">Por vencer</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }} vence el {{ l.fecha_vencimiento|date:"d/m/Y" }} ({{ l.cantidad_actual }} en existencia).</li>
         {% endfor %}
+        {% if total_bajo_minimo %}
+        <li><span class="insignia mr-1 bg-white px-2 py-0.5 text-xs text-coral-oscuro">Bajo el mínimo</span>
+            {{ total_bajo_minimo }} producto{{ total_bajo_minimo|pluralize }} en o por debajo de su existencia mínima.
+            {% if filtro != 'bajo' %}<a href="?filtro=bajo" class="enlace">Ver cuáles</a>{% endif %}
+        </li>
+        {% endif %}
     </ul>
-    <p class="mt-2 text-xs text-amber-800">Se avisa con {{ dias_alerta }} días de anticipación.</p>
+    {% if lotes_vencidos or lotes_por_vencer %}<p class="mt-2 text-xs text-slate-600">Los vencimientos se avisan con {{ dias_alerta }} días de anticipación.</p>{% endif %}
 </section>
 {% endif %}
 
-<form method="get" class="mb-4 flex flex-wrap gap-2">
-    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o código"
-           class="w-full max-w-xs rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
-    <select name="filtro" class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
-        <option value="">Activos</option>
-        <option value="bajo" {% if filtro == 'bajo' %}selected{% endif %}>Bajo el mínimo</option>
-        <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos (incluye inactivos)</option>
-    </select>
-    <button class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">Filtrar</button>
+<form method="get" role="search" class="tarjeta mb-6">
+    <label for="q" class="etiqueta">Buscar por nombre o código</label>
+    <div class="flex flex-col gap-2 sm:flex-row">
+        <input id="q" type="search" name="q" value="{{ q }}" autocomplete="off" placeholder="Ej.: Acetaminofén o MED-001" class="campo">
+        <select name="filtro" aria-label="Mostrar" class="campo sm:w-64">
+            <option value="">Activos</option>
+            <option value="bajo" {% if filtro == 'bajo' %}selected{% endif %}>Bajo el mínimo</option>
+            <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos (incluye inactivos)</option>
+        </select>
+        <button type="submit" class="btn btn-principal">Buscar</button>
+        {% if q or filtro %}<a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario">Limpiar</a>{% endif %}
+    </div>
 </form>
 
-<div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-    <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-left text-slate-600">
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-marino-claro text-xs font-bold uppercase tracking-wide text-marino">
             <tr>
-                <th class="px-4 py-3 font-medium">Código</th>
-                <th class="px-4 py-3 font-medium">Producto</th>
-                <th class="px-4 py-3 font-medium">Tipo</th>
-                <th class="px-4 py-3 text-right font-medium">Existencia</th>
-                <th class="px-4 py-3 text-right font-medium">Mínimo</th>
+                <th scope="col" class="px-4 py-3">Producto</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">Código</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">Tipo</th>
+                <th scope="col" class="px-4 py-3 text-right">Existencia</th>
+                <th scope="col" class="hidden px-4 py-3 text-right sm:table-cell">Mínimo</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
             {% for p in producto_list %}
-            <tr class="hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ p.codigo }}</td>
+            <tr class="hover:bg-blanco-humo{% if not p.activo %} text-slate-400{% endif %}">
                 <td class="px-4 py-3">
-                    <a href="{% url 'inventario:producto_detalle' p.pk %}" class="font-medium text-teal-800 hover:underline">{{ p.nombre }}</a>
+                    <a href="{% url 'inventario:producto_detalle' p.pk %}" class="font-semibold {% if p.activo %}text-marino{% else %}text-slate-400{% endif %} hover:underline">{{ p.nombre }}</a>
                     {% if p.presentacion %}<span class="text-slate-500"> · {{ p.presentacion }}</span>{% endif %}
-                    {% if not p.activo %}<span class="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs">inactivo</span>{% endif %}
+                    {% if not p.activo %}<span class="insignia ml-2 bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Inactivo</span>{% endif %}
                 </td>
-                <td class="px-4 py-3 text-slate-600">{{ p.get_tipo_display }}</td>
-                <td class="px-4 py-3 text-right tabular-nums {% if p.bajo_minimo %}font-semibold text-red-700{% endif %}">
+                <td class="hidden whitespace-nowrap px-4 py-3 font-mono text-gris-oscuro sm:table-cell">{{ p.codigo }}</td>
+                <td class="hidden px-4 py-3 text-slate-600 md:table-cell">{{ p.get_tipo_display }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums {% if p.bajo_minimo %}font-bold text-red-700{% endif %}">
                     {{ p.stock_actual }} <span class="font-normal text-slate-500">{{ p.unidad_medida }}</span>
                 </td>
-                <td class="px-4 py-3 text-right tabular-nums text-slate-500">{{ p.stock_minimo }}</td>
+                <td class="hidden px-4 py-3 text-right tabular-nums text-slate-500 sm:table-cell">{{ p.stock_minimo }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">
-                No hay productos que coincidan. <a href="{% url 'inventario:producto_crear' %}" class="text-teal-800 underline">Agrega el primero</a>.
+            <tr><td colspan="5" class="px-4 py-10 text-center">
+                <p class="text-lg font-semibold text-marino">{% if q or filtro %}No hay productos que coincidan.{% else %}Todavía no hay productos.{% endif %}</p>
+                {% if perms.inventario.add_producto %}<a href="{% url 'inventario:producto_crear' %}" class="btn btn-acento mt-4">Agregar producto</a>{% endif %}
             </td></tr>
             {% endfor %}
         </tbody>

@@ -1,7 +1,7 @@
 {% if is_paginated %}
-<nav class="mt-4 flex items-center justify-between text-sm text-slate-600">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if filtro %}&filtro={{ filtro }}{% endif %}" class="hover:underline">Anterior</a>{% else %}<span></span>{% endif %}
-    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if filtro %}&filtro={{ filtro }}{% endif %}" class="hover:underline">Siguiente</a>{% else %}<span></span>{% endif %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Páginas">
+    {% if page_obj.has_previous %}<a href="{% querystring page=page_obj.previous_page_number %}" class="btn btn-secundario btn-chico">← Anterior</a>{% else %}<span></span>{% endif %}
+    <span class="text-slate-600">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="{% querystring page=page_obj.next_page_number %}" class="btn btn-secundario btn-chico">Siguiente →</a>{% else %}<span></span>{% endif %}
 </nav>
 {% endif %}

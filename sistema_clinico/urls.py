@@ -30,4 +30,5 @@ urlpatterns = [
     path('cuentas/salir/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     path('pacientes/', include('pacientes.urls')),
+    path('inventario/', include('inventario.urls')),
 ]

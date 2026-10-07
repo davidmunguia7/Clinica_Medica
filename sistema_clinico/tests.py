@@ -1,6 +1,8 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+
+User = get_user_model()
 
 
 class InicioYSesionTests(TestCase):
@@ -32,6 +34,12 @@ class InicioYSesionTests(TestCase):
         self.assertContains(respuesta, "Pacientes activos")
         self.assertContains(respuesta, "Registrados hoy")
         self.assertContains(respuesta, reverse("pacientes:registrar"))
+
+    def test_menu_e_inicio_llevan_al_inventario(self):
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertContains(respuesta, reverse("inventario:producto_lista"))
+        self.assertContains(respuesta, "Inventario de medicamentos")
 
     def test_inicio_sin_permisos_no_muestra_pacientes(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")

@@ -93,7 +93,7 @@
     {% endif %}
 
     <section class="tarjeta min-w-0">
-        {% if perms.pacientes.add_paciente or perms.pacientes.view_paciente %}
+        {% if perms.pacientes.add_paciente or perms.pacientes.view_paciente or perms.inventario.view_producto %}
         <h2 class="titulo-seccion">Accesos rápidos</h2>
         <div class="mt-4 space-y-3">
             {% if perms.pacientes.add_paciente %}
@@ -104,6 +104,12 @@
             {% endif %}
             {% if perms.pacientes.view_paciente %}
             <a href="{% url 'pacientes:lista' %}" class="btn btn-secundario w-full">Ver lista de pacientes</a>
+            {% endif %}
+            {% if perms.inventario.view_producto %}
+            <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario w-full">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>
+                Inventario de medicamentos
+            </a>
             {% endif %}
         </div>
         <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Otros módulos</h3>
@@ -122,13 +128,6 @@
                 <span class="flex items-center gap-2 text-slate-600">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg>
                     Consultas
-                </span>
-                <span class="insignia shrink-0 bg-white text-xs text-slate-500 ring-1 ring-slate-200">Próximamente</span>
-            </li>
-            <li class="flex items-center justify-between gap-2 rounded-lg bg-blanco-humo px-3 py-2">
-                <span class="flex items-center gap-2 text-slate-600">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>
-                    Inventario de medicamentos
                 </span>
                 <span class="insignia shrink-0 bg-white text-xs text-slate-500 ring-1 ring-slate-200">Próximamente</span>
             </li>

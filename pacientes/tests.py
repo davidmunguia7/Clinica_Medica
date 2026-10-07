@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
@@ -23,6 +24,9 @@ from .validators import (
     validar_dui,
     validar_telefono,
 )
+
+# El sistema usa el modelo de usuario de la app «usuarios» (usuarios.Usuario)
+User = get_user_model()
 
 
 def dui_con_verificador(cuerpo):
@@ -318,7 +322,7 @@ class VistasTests(TestCase):
         self.client.logout()
         respuesta = self.client.get(reverse("pacientes:lista"))
         self.assertEqual(respuesta.status_code, 302)
-        self.assertIn(reverse("admin:login"), respuesta["Location"])
+        self.assertIn(reverse("login"), respuesta["Location"])
 
     def test_usuario_sin_permiso(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")

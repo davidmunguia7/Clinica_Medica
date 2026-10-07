@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Iniciar sesión · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mx-auto grid max-w-4xl overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-slate-200 md:grid-cols-2">
+    <div class="relative hidden overflow-hidden bg-marino p-10 text-white md:flex md:flex-col md:justify-between">
+        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-verde-teal" aria-hidden="true"></div>
+        <div class="absolute -bottom-20 -left-12 h-44 w-44 rounded-full bg-coral" aria-hidden="true"></div>
+        <div class="relative">
+            <span class="inline-flex rounded-2xl bg-white p-3 shadow">
+                <img src="{% static 'img/logo-clinica-familiar.svg' %}" alt="" class="h-14 w-auto">
+            </span>
+            <p class="mt-8 text-3xl font-extrabold uppercase leading-tight">Cuidado integral para toda tu familia</p>
+        </div>
+        <p class="relative mt-10 pl-36 text-right text-sm text-marino-claro">Sistema de gestión de la Clínica Familiar</p>
+    </div>
+
+    <div class="p-8 sm:p-10">
+        <h1 class="text-2xl font-bold text-marino">Iniciar sesión</h1>
+        <p class="mt-1 text-sm text-slate-600">Ingrese con su usuario y contraseña.</p>
+
+        {% if form.errors %}
+        <div role="alert" class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">
+            Usuario o contraseña incorrectos. Revise que estén bien escritos e intente de nuevo.
+        </div>
+        {% elif next and user.is_authenticated %}
+        <div role="alert" class="mt-5 rounded-lg border border-coral/40 bg-coral-claro p-3 text-sm font-medium text-gris-oscuro">
+            Su usuario no tiene permiso para ver esa página. Inicie sesión con otro usuario.
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" class="mt-6 space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="id_username" class="etiqueta">Usuario</label>
+                <input type="text" name="username" id="id_username" class="campo" autocomplete="username" autocapitalize="none" autofocus required value="{{ form.username.value|default:'' }}">
+            </div>
+            <div>
+                <label for="id_password" class="etiqueta">Contraseña</label>
+                <input type="password" name="password" id="id_password" class="campo" autocomplete="current-password" required>
+            </div>
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-acento w-full">Entrar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

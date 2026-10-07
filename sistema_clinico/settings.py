@@ -141,9 +141,11 @@ STATIC_URL = 'static/'
 TAILWIND_APP_NAME = 'theme'
 INTERNAL_IPS = ['127.0.0.1']
 
-# Inicio de sesión: por ahora se usa la pantalla del admin de Django.
-# Cambiarlo cuando el módulo de login con roles (HU-05) tenga su propia pantalla.
-LOGIN_URL = 'admin:login'
+# Inicio de sesión con la pantalla propia de la clínica.
+# El módulo de login con roles (HU-05) puede ampliar o reemplazar estas vistas.
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'inicio'
+LOGOUT_REDIRECT_URL = 'login'
 
 
 # Email

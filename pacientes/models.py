@@ -309,6 +309,11 @@ class Paciente(models.Model):
         return nombre
 
     @property
+    def iniciales(self):
+        """Ej.: 'María José Pérez' -> 'MP' (para el círculo con iniciales)."""
+        return f"{self.nombres[:1]}{self.primer_apellido[:1]}".upper()
+
+    @property
     def edad(self):
         return calcular_edad(self.fecha_nacimiento) if self.fecha_nacimiento else None
 

@@ -11,32 +11,23 @@ from .models import (
 )
 from .validators import normalizar_dui, normalizar_telefono, validar_dui
 
-# Clases de Tailwind para los controles del formulario
-_BASE = (
-    "block w-full rounded-lg border px-3 py-2 text-base text-slate-900 shadow-sm "
-    "placeholder:text-slate-400 focus:border-teal-600 focus:outline-none "
-    "focus:ring-2 focus:ring-teal-600/30 disabled:cursor-not-allowed disabled:bg-slate-100"
-)
-_NORMAL = "border-slate-300 bg-white"
-_CON_ERROR = "border-red-500 bg-red-50"
-_CHECKBOX = "mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 accent-teal-700"
+# Clases definidas en theme/static_src/src/styles.css (paleta oficial de la clínica)
+_CAMPO = "campo"
+_CAMPO_CON_ERROR = "campo campo-error"
+_CASILLA = "casilla"
 
 
 class EstilosTailwindMixin:
-    """Aplica clases de Tailwind a cada control y resalta en rojo los que tienen error."""
-
-    clases_extra = {}
+    """Aplica las clases del sistema a cada control y resalta en rojo los que tienen error."""
 
     def _aplicar_estilos(self):
         errores = self._errors or {}
         for nombre, campo in self.fields.items():
             widget = campo.widget
             if isinstance(widget, forms.CheckboxInput):
-                widget.attrs["class"] = _CHECKBOX
+                widget.attrs["class"] = _CASILLA
             else:
-                color = _CON_ERROR if nombre in errores else _NORMAL
-                extra = self.clases_extra.get(nombre, "")
-                widget.attrs["class"] = f"{_BASE} {color} {extra}".strip()
+                widget.attrs["class"] = _CAMPO_CON_ERROR if nombre in errores else _CAMPO
             if nombre in errores:
                 widget.attrs["aria-invalid"] = "true"
             else:
@@ -83,9 +74,6 @@ def _campo_telefono(etiqueta, requerido):
 
 
 class PacienteForm(EstilosTailwindMixin, forms.ModelForm):
-    # Gris cuando el JS lo bloquea por "No presenta documento"
-    clases_extra = {"numero_documento": "read-only:bg-slate-100"}
-
     # Controles de apoyo para elegir el distrito en cascada (no se guardan)
     departamento = forms.ModelChoiceField(
         queryset=Departamento.objects.all(),

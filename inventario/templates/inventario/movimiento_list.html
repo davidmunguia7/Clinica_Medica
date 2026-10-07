@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Movimientos{% endblock %}
+{% block content %}
+<a href="{% url 'inventario:producto_lista' %}" class="text-sm text-slate-500 hover:underline">Volver al inventario</a>
+<h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">Historial de movimientos</h1>
+{% include "inventario/_tabla_movimientos.html" with movimientos=movimiento_list mostrar_producto=True %}
+{% include "inventario/_paginacion.html" %}
+{% endblock %}

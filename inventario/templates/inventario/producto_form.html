@@ -1,15 +1,14 @@
 {% extends "base.html" %}
-{% block title %}{% if object %}Editar producto{% else %}Nuevo producto{% endif %}{% endblock %}
+{% block title %}{% if object %}Editar producto{% else %}Nuevo producto{% endif %} · Inventario{% endblock %}
 {% block content %}
 <div class="max-w-xl">
-    <a href="{% if object %}{% url 'inventario:producto_detalle' object.pk %}{% else %}{% url 'inventario:producto_lista' %}{% endif %}" class="text-sm text-slate-500 hover:underline">Cancelar</a>
-    <h1 class="mt-2 mb-6 text-2xl font-semibold text-slate-900">{% if object %}Editar {{ object.nombre }}{% else %}Nuevo producto{% endif %}</h1>
-    <form method="post" class="rounded-lg border border-slate-200 bg-white p-6">
+    <a href="{% if object %}{% url 'inventario:producto_detalle' object.pk %}{% else %}{% url 'inventario:producto_lista' %}{% endif %}" class="enlace text-sm">← Cancelar</a>
+    <h1 class="mt-2 mb-6 text-3xl font-extrabold text-marino">{% if object %}Editar {{ object.nombre }}{% else %}Nuevo producto{% endif %}</h1>
+    <form method="post" class="tarjeta">
         {% csrf_token %}
         {% include "inventario/_campos.html" %}
-        <button class="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">
-            {% if object %}Guardar cambios{% else %}Crear producto{% endif %}
-        </button>
+        <p class="mb-5 text-xs text-slate-500"><span class="font-bold text-coral-oscuro">*</span> Dato obligatorio</p>
+        <button type="submit" class="btn btn-acento">{% if object %}Guardar cambios{% else %}Crear producto{% endif %}</button>
     </form>
 </div>
 {% endblock %}

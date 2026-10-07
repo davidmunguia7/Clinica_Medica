@@ -1,6 +1,8 @@
 from datetime import timedelta
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ValidationError
 from django.db.models import F, Q, Sum
@@ -14,24 +16,24 @@ from . import services
 from .forms import EntradaForm, ProductoForm, SalidaForm
 from .models import DIAS_ALERTA_VENCIMIENTO, Lote, Movimiento, Producto
 
-# NOTA: cuando el módulo de login esté listo, activen
-# 'django.contrib.auth.middleware.LoginRequiredMiddleware' en settings.py
-# y todas estas vistas quedarán protegidas sin tocar este archivo.
+# Todas las vistas piden iniciar sesión y el permiso de Django que corresponde
+# (igual que en pacientes). Sin sesión llevan al login; sin permiso, a la página 403.
 
 
-def _usuario(request):
-    return request.user if request.user.is_authenticated else None
+def _con_stock_total():
+    # order_by explícito: el ordering del Meta no se aplica a consultas con Sum()
+    return Producto.objects.annotate(
+        stock_total=Coalesce(Sum("lotes__cantidad_actual"), 0)
+    ).order_by("nombre")
 
 
-class ProductoListView(ListView):
+class ProductoListView(PermissionRequiredMixin, ListView):
+    permission_required = "inventario.view_producto"
     model = Producto
     paginate_by = 25
 
     def get_queryset(self):
-        # order_by explícito: el ordering del Meta no se aplica a consultas con Sum()
-        qs = Producto.objects.annotate(
-            stock_total=Coalesce(Sum("lotes__cantidad_actual"), 0)
-        ).order_by("nombre")
+        qs = _con_stock_total()
         q = self.request.GET.get("q", "").strip()
         if q:
             qs = qs.filter(Q(nombre__icontains=q) | Q(codigo__icontains=q))
@@ -51,12 +53,16 @@ class ProductoListView(ListView):
             fecha_vencimiento__lte=hoy + timedelta(days=DIAS_ALERTA_VENCIMIENTO),
         )
         ctx["dias_alerta"] = DIAS_ALERTA_VENCIMIENTO
+        ctx["total_bajo_minimo"] = _con_stock_total().filter(
+            activo=True, stock_total__lte=F("stock_minimo")
+        ).count()
         ctx["q"] = self.request.GET.get("q", "")
         ctx["filtro"] = self.request.GET.get("filtro", "")
         return ctx
 
 
-class ProductoDetailView(DetailView):
+class ProductoDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = "inventario.view_producto"
     model = Producto
 
     def get_context_data(self, **kwargs):
@@ -66,7 +72,8 @@ class ProductoDetailView(DetailView):
         return ctx
 
 
-class ProductoCreateView(SuccessMessageMixin, CreateView):
+class ProductoCreateView(PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    permission_required = "inventario.add_producto"
     model = Producto
     form_class = ProductoForm
     success_message = "Producto «%(nombre)s» creado."
@@ -75,7 +82,8 @@ class ProductoCreateView(SuccessMessageMixin, CreateView):
         return reverse("inventario:producto_detalle", args=[self.object.pk])
 
 
-class ProductoUpdateView(SuccessMessageMixin, UpdateView):
+class ProductoUpdateView(PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+    permission_required = "inventario.change_producto"
     model = Producto
     form_class = ProductoForm
     success_message = "Cambios guardados."
@@ -91,10 +99,10 @@ def _movimiento(request, pk, form_class, tipo):
         datos = form.cleaned_data
         try:
             if tipo == Movimiento.Tipo.ENTRADA:
-                services.registrar_entrada(producto=producto, usuario=_usuario(request), **datos)
+                services.registrar_entrada(producto=producto, usuario=request.user, **datos)
                 messages.success(request, f"Entrada registrada: {datos['cantidad']} {producto.unidad_medida}.")
             else:
-                services.registrar_salida(producto=producto, usuario=_usuario(request), **datos)
+                services.registrar_salida(producto=producto, usuario=request.user, **datos)
                 messages.success(request, f"Salida registrada: {datos['cantidad']} {producto.unidad_medida}.")
             return redirect("inventario:producto_detalle", pk=producto.pk)
         except ValidationError as e:
@@ -105,15 +113,20 @@ def _movimiento(request, pk, form_class, tipo):
     })
 
 
+@login_required
+@permission_required("inventario.add_movimiento", raise_exception=True)
 def registrar_entrada(request, pk):
     return _movimiento(request, pk, EntradaForm, Movimiento.Tipo.ENTRADA)
 
 
+@login_required
+@permission_required("inventario.add_movimiento", raise_exception=True)
 def registrar_salida(request, pk):
     return _movimiento(request, pk, SalidaForm, Movimiento.Tipo.SALIDA)
 
 
-class MovimientoListView(ListView):
+class MovimientoListView(PermissionRequiredMixin, ListView):
+    permission_required = "inventario.view_movimiento"
     model = Movimiento
     paginate_by = 50
     queryset = Movimiento.objects.select_related("producto", "lote", "usuario")

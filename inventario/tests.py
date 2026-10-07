@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
@@ -45,6 +47,10 @@ class ServiciosInventarioTests(TestCase):
 
 
 class VistasInventarioTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser("admin", "admin@example.com", "clave-de-prueba-123")
+        self.client.force_login(self.admin)
+
     def test_flujo_basico(self):
         r = self.client.post(reverse("inventario:producto_crear"), {
             "codigo": "INS-01", "nombre": "Gasas", "tipo": "INS", "unidad_medida": "paquete",
@@ -60,3 +66,38 @@ class VistasInventarioTests(TestCase):
         for nombre in ["producto_lista", "movimiento_lista"]:
             self.assertEqual(self.client.get(reverse(f"inventario:{nombre}")).status_code, 200)
         self.assertContains(self.client.get(reverse("inventario:producto_lista") + "?filtro=bajo"), "Gasas", status_code=200)
+
+    def test_movimiento_guarda_el_usuario(self):
+        p = Producto.objects.create(codigo="MED-002", nombre="Ibuprofeno", stock_minimo=5)
+        self.client.post(reverse("inventario:entrada", args=[p.pk]), {"numero_lote": "L1", "cantidad": 8})
+        self.assertEqual(Movimiento.objects.get(producto=p).usuario, self.admin)
+
+    def test_aviso_de_productos_bajo_el_minimo(self):
+        url = reverse("inventario:producto_lista")
+        self.assertNotContains(self.client.get(url), "por debajo de su existencia mínima")
+        Producto.objects.create(codigo="MED-003", nombre="Amoxicilina", stock_minimo=10)
+        self.assertContains(self.client.get(url), "1 producto en o por debajo de su existencia mínima")
+
+    def test_requiere_iniciar_sesion(self):
+        self.client.logout()
+        p = Producto.objects.create(codigo="MED-004", nombre="Loratadina")
+        for url in [
+            reverse("inventario:producto_lista"),
+            reverse("inventario:producto_detalle", args=[p.pk]),
+            reverse("inventario:producto_crear"),
+            reverse("inventario:entrada", args=[p.pk]),
+            reverse("inventario:movimiento_lista"),
+        ]:
+            r = self.client.get(url)
+            self.assertEqual(r.status_code, 302, url)
+            self.assertIn(reverse("login"), r["Location"])
+
+    def test_usuario_sin_permiso(self):
+        usuario = get_user_model().objects.create_user("visitante", password="clave-de-prueba-123")
+        self.client.force_login(usuario)
+        self.assertEqual(self.client.get(reverse("inventario:producto_lista")).status_code, 403)
+
+        usuario.user_permissions.add(Permission.objects.get(codename="view_producto"))
+        self.client.force_login(get_user_model().objects.get(pk=usuario.pk))
+        self.assertEqual(self.client.get(reverse("inventario:producto_lista")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("inventario:producto_crear")).status_code, 403)

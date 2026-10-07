@@ -2,22 +2,16 @@ from django import forms
 
 from .models import Producto
 
-INPUT = (
-    "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm "
-    "focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
-)
-
-
 class EstiloMixin:
-    """Aplica las clases de Tailwind a todos los campos del formulario."""
+    """Aplica a todos los campos los componentes de la paleta (theme/static_src/src/styles.css)."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs["class"] = "h-4 w-4 accent-teal-700"
+                field.widget.attrs["class"] = "casilla"
             else:
-                field.widget.attrs["class"] = INPUT
+                field.widget.attrs["class"] = "campo"
 
 
 class ProductoForm(EstiloMixin, forms.ModelForm):

@@ -1,17 +1,17 @@
 {% extends "base.html" %}
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}{{ titulo }} · Inventario{% endblock %}
 {% block content %}
 <div class="max-w-xl">
-    <a href="{% url 'inventario:producto_detalle' producto.pk %}" class="text-sm text-slate-500 hover:underline">Cancelar</a>
-    <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ titulo }}</h1>
-    <p class="mb-6 text-sm text-slate-500">{{ producto.nombre }} · existencia actual: {{ producto.stock_actual }} {{ producto.unidad_medida }}</p>
+    <a href="{% url 'inventario:producto_detalle' producto.pk %}" class="enlace text-sm">← Cancelar</a>
+    <h1 class="mt-2 text-3xl font-extrabold text-marino">{{ titulo }}</h1>
+    <p class="mt-1 mb-6 text-slate-600">{{ producto.nombre }} · existencia actual: <strong>{{ producto.stock_actual }} {{ producto.unidad_medida }}</strong></p>
     {% if tipo == 'SAL' %}
-    <p class="mb-4 text-sm text-slate-600">Se descuenta primero del lote que vence antes. Los lotes vencidos no se usan.</p>
+    <p class="mb-4 rounded-lg border border-marino-claro bg-marino-claro px-4 py-3 text-sm text-marino">Se descuenta primero del lote que vence antes. Los lotes vencidos no se usan.</p>
     {% endif %}
-    <form method="post" class="rounded-lg border border-slate-200 bg-white p-6">
+    <form method="post" class="tarjeta">
         {% csrf_token %}
         {% include "inventario/_campos.html" %}
-        <button class="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800">{{ titulo }}</button>
+        <button type="submit" class="btn btn-acento">{{ titulo }}</button>
     </form>
 </div>
 {% endblock %}

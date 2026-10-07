@@ -318,7 +318,7 @@ class VistasTests(TestCase):
         self.client.logout()
         respuesta = self.client.get(reverse("pacientes:lista"))
         self.assertEqual(respuesta.status_code, 302)
-        self.assertIn(reverse("admin:login"), respuesta["Location"])
+        self.assertIn(reverse("login"), respuesta["Location"])
 
     def test_usuario_sin_permiso(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")

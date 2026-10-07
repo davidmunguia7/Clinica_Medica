@@ -5,35 +5,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Clínica Familiar{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/logo-clinica-familiar.svg' %}">
     {% tailwind_css %}
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-800 antialiased print:bg-white">
+<body class="flex min-h-screen flex-col bg-blanco-humo text-gris-oscuro antialiased print:bg-white">
+    {% url 'inicio' as url_inicio %}
     {% url 'pacientes:lista' as url_pacientes %}
-    <header class="bg-teal-800 text-white shadow print:hidden">
-        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <a href="{{ url_pacientes|default:'/' }}" class="text-lg font-semibold tracking-tight">Clínica Familiar</a>
+    {% url 'pacientes:registrar' as url_registrar %}
+    {% with ns=request.resolver_match.namespace vista=request.resolver_match.url_name %}
+    <header class="border-b border-slate-200 bg-white print:hidden">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
+            <a href="{{ url_inicio|default:'/' }}" class="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal">
+                <img src="{% static 'img/logo-clinica-familiar.svg' %}" alt="" class="h-11 w-auto">
+                <span class="text-xl font-bold leading-tight tracking-tight text-marino">Clínica Familiar</span>
+            </a>
+
             {% if user.is_authenticated %}
-            <nav class="flex items-center gap-3 text-sm" aria-label="Menú principal">
-                {% if url_pacientes %}
-                <a href="{{ url_pacientes }}" class="rounded-md px-3 py-2 font-medium hover:bg-teal-700">Pacientes</a>
+            <nav class="order-last -mb-3 flex w-full gap-1 text-sm font-semibold sm:order-none sm:mb-0 sm:w-auto" aria-label="Menú principal">
+                {% if url_inicio %}
+                <a href="{{ url_inicio }}" {% if vista == 'inicio' %}aria-current="page"{% endif %}
+                   class="border-b-2 px-3 py-3 sm:py-2 {% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
                 {% endif %}
-                <span class="hidden text-teal-100 sm:inline">{{ user.get_full_name|default:user.username }}</span>
-                <form method="post" action="{% url 'admin:logout' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="rounded-md border border-teal-600 px-3 py-1.5 font-medium hover:bg-teal-700">Salir</button>
-                </form>
+                {% if url_pacientes and perms.pacientes.view_paciente %}
+                <a href="{{ url_pacientes }}" {% if ns == 'pacientes' %}aria-current="page"{% endif %}
+                   class="border-b-2 px-3 py-3 sm:py-2 {% if ns == 'pacientes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Pacientes</a>
+                {% endif %}
             </nav>
+
+            <div class="ml-auto flex items-center gap-3">
+                {# Las pantallas que ya tienen su propio botón de registrar lo quitan con {% block boton_registrar %}{% endblock %} #}
+                {% block boton_registrar %}
+                {% if url_registrar and perms.pacientes.add_paciente %}
+                <a href="{{ url_registrar }}" class="btn btn-acento btn-chico hidden md:inline-flex">+ Registrar paciente</a>
+                {% endif %}
+                {% endblock %}
+                <span class="hidden text-sm text-slate-600 lg:inline">{{ user.get_full_name|default:user.username }}</span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secundario btn-chico">Salir</button>
+                </form>
+            </div>
             {% endif %}
         </div>
     </header>
+    {% endwith %}
 
-    <main class="mx-auto max-w-6xl px-4 py-6 print:max-w-none print:px-0 print:py-0">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 print:max-w-none print:px-0 print:py-0">
         {% if messages %}
         <div class="mb-6 space-y-2 print:hidden">
             {% for message in messages %}
-            <div role="alert" class="rounded-lg border px-4 py-3 text-sm font-medium {% if message.level_tag == 'success' %}border-green-200 bg-green-50 text-green-800{% elif message.level_tag == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.level_tag == 'warning' %}border-amber-200 bg-amber-50 text-amber-800{% else %}border-sky-200 bg-sky-50 text-sky-800{% endif %}">
+            <div role="alert" class="rounded-lg border px-4 py-3 text-sm font-medium {% if message.level_tag == 'success' %}border-verde-teal/30 bg-verde-teal-claro text-verde-teal-oscuro{% elif message.level_tag == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.level_tag == 'warning' %}border-coral/40 bg-coral-claro text-gris-oscuro{% else %}border-marino-claro bg-marino-claro text-marino{% endif %}">
                 {{ message }}
             </div>
             {% endfor %}
@@ -42,6 +65,13 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="bg-marino text-white print:hidden">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-sm">
+            <p class="font-semibold">Clínica Familiar</p>
+            <p class="text-marino-claro">Cuidado integral para toda tu familia · {% now "Y" %}</p>
+        </div>
+    </footer>
 
     {% block scripts %}{% endblock %}
 </body>

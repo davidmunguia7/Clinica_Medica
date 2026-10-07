@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Sin permiso · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="tarjeta mx-auto max-w-xl p-8 text-center sm:p-10">
+    <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-coral-claro text-coral-oscuro" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </span>
+    <h1 class="mt-4 text-2xl font-extrabold text-marino">No tiene permiso para ver esta página</h1>
+    <p class="mt-2 text-slate-600">Si cree que debería tener acceso, pida al administrador que revise los permisos de su usuario.</p>
+    <a href="{% url 'inicio' %}" class="btn btn-principal mt-6">Volver al inicio</a>
+</div>
+{% endblock %}

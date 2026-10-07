@@ -208,7 +208,7 @@
       return {
         el: el,
         marcador: marcador,
-        seccion: titulo ? titulo.textContent.trim() : "",
+        seccion: titulo ? titulo.textContent.replace(/^\s*\d+\.?\s*/, "").trim() : "",
         esSeccion: el.tagName === "SECTION",
       };
     });
@@ -246,7 +246,8 @@
     }
 
     function esRequerido(control) {
-      return control.required || requeridoPorContexto(control);
+      // data-obligatorio lo pone el servidor (por ejemplo «Tipo de documento», que ya trae DUI elegido)
+      return control.required || requeridoPorContexto(control) || Boolean(control.closest("[data-obligatorio]"));
     }
 
     function esObligatorio(paso) {
@@ -355,10 +356,10 @@
         if (paso.seccion !== grupoActual) {
           grupoActual = paso.seccion;
           var titulo = document.createElement("h3");
-          titulo.className = "text-sm font-semibold uppercase tracking-wide text-teal-800";
+          titulo.className = "text-sm font-bold uppercase tracking-wide text-verde-teal-oscuro";
           titulo.textContent = paso.seccion;
           lista = document.createElement("dl");
-          lista.className = "mt-1 divide-y divide-slate-100 rounded-lg border border-slate-200";
+          lista.className = "mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200";
           var bloque = document.createElement("div");
           bloque.appendChild(titulo);
           bloque.appendChild(lista);
@@ -373,13 +374,13 @@
           dt.textContent = etiquetaDe(control, paso);
           var dd = document.createElement("dd");
           var valor = valorDe(control);
-          dd.className = valor ? "text-slate-900" : "text-slate-400";
+          dd.className = valor ? "font-medium text-gris-oscuro" : "italic text-slate-400";
           dd.textContent = valor || "(en blanco)";
           texto.appendChild(dt);
           texto.appendChild(dd);
           var corregir = document.createElement("button");
           corregir.type = "button";
-          corregir.className = "shrink-0 text-sm font-medium text-teal-700 underline";
+          corregir.className = "enlace shrink-0 cursor-pointer text-sm underline";
           corregir.textContent = "Corregir";
           corregir.addEventListener("click", function () { mostrarPaso(paso); });
           fila.appendChild(texto);

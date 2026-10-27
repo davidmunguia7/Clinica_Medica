@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load inventario_extras %}
 {% block title %}{{ producto.nombre }} · Inventario{% endblock %}
 {% block content %}
 <a href="{% url 'inventario:producto_lista' %}" class="enlace text-sm">← Volver al inventario</a>
@@ -7,7 +8,14 @@
     <div>
         <h1 class="text-3xl font-extrabold text-marino">{{ producto.nombre }}</h1>
         <p class="mt-1 text-slate-600"><span class="font-mono">{{ producto.codigo }}</span> · {{ producto.get_tipo_display }}{% if producto.presentacion %} · {{ producto.presentacion }}{% endif %}</p>
-        {% if not producto.activo %}<span class="insignia mt-2 bg-slate-100 text-slate-600">Inactivo</span>{% endif %}
+        <p class="mt-2 flex flex-wrap gap-2">
+            {% if producto.categoria %}
+            <a href="{% url 'inventario:producto_lista' %}?categoria={{ producto.categoria_id }}" class="insignia bg-marino-claro text-marino hover:underline">{{ producto.categoria.nombre }}</a>
+            {% else %}
+            <span class="insignia bg-slate-100 text-slate-600">Sin categoría</span>
+            {% endif %}
+            {% if not producto.activo %}<span class="insignia bg-slate-100 text-slate-600">Inactivo</span>{% endif %}
+        </p>
     </div>
     <div class="flex flex-wrap gap-2">
         {% if perms.inventario.change_producto %}
@@ -20,16 +28,27 @@
     </div>
 </div>
 
-<div class="tarjeta mb-8">
-    <p class="text-sm text-slate-600">Existencia total</p>
-    <p class="text-3xl font-extrabold tabular-nums {% if producto.bajo_minimo %}text-red-700{% else %}text-marino{% endif %}">
-        {{ producto.stock_actual }} <span class="text-base font-normal text-slate-500">{{ producto.unidad_medida }}</span>
-    </p>
-    {% if producto.bajo_minimo %}
-    <p class="mt-2 text-sm font-medium text-red-700">Está en o por debajo del mínimo ({{ producto.stock_minimo }}). Conviene reabastecer.</p>
-    {% else %}
-    <p class="mt-1 text-sm text-slate-500">Mínimo: {{ producto.stock_minimo }}</p>
-    {% endif %}
+<div class="mb-8 grid gap-4 sm:grid-cols-2">
+    <div class="tarjeta">
+        <p class="text-sm text-slate-600">Existencia total</p>
+        <p class="text-3xl font-extrabold tabular-nums {% if producto.bajo_minimo %}text-red-700{% else %}text-marino{% endif %}">
+            {{ producto.stock_actual }} <span class="text-base font-normal text-slate-500">{{ producto.unidad_medida }}</span>
+        </p>
+        {% if producto.bajo_minimo %}
+        <p class="mt-2 text-sm font-medium text-red-700">Está en o por debajo del mínimo ({{ producto.stock_minimo }}). Conviene reabastecer.</p>
+        {% else %}
+        <p class="mt-1 text-sm text-slate-500">Mínimo: {{ producto.stock_minimo }}</p>
+        {% endif %}
+    </div>
+    <div class="tarjeta">
+        <p class="text-sm text-slate-600">Precio de venta</p>
+        {% if producto.precio_venta %}
+        <p class="text-3xl font-extrabold tabular-nums text-marino">{{ producto.precio_venta|dinero }} <span class="text-base font-normal text-slate-500">por {{ producto.unidad_medida }}</span></p>
+        {% else %}
+        <p class="text-xl font-bold text-coral-oscuro">Sin precio</p>
+        <p class="mt-1 text-sm text-slate-600">Agréguelo con «Editar» para que las ventas cuenten en el reporte del mes.</p>
+        {% endif %}
+    </div>
 </div>
 
 <h2 class="titulo-seccion mb-3">Lotes en existencia</h2>
@@ -39,6 +58,7 @@
             <tr>
                 <th scope="col" class="px-4 py-3">Lote</th>
                 <th scope="col" class="px-4 py-3">Vence</th>
+                <th scope="col" class="px-4 py-3 text-right">Costo c/u</th>
                 <th scope="col" class="px-4 py-3 text-right">Cantidad</th>
             </tr>
         </thead>
@@ -51,10 +71,11 @@
                     {% if l.vencido %}<span class="insignia ml-1 bg-red-50 px-2 py-0.5 text-xs text-red-700">Vencido</span>
                     {% elif l.por_vencer %}<span class="insignia ml-1 bg-coral-claro px-2 py-0.5 text-xs text-coral-oscuro">Por vencer</span>{% endif %}
                 </td>
+                <td class="px-4 py-3 text-right tabular-nums text-slate-600">{{ l.costo_unitario|dinero }}</td>
                 <td class="px-4 py-3 text-right font-semibold tabular-nums">{{ l.cantidad_actual }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="3" class="px-4 py-8 text-center text-slate-500">Sin existencias. Registre una entrada para agregar un lote.</td></tr>
+            <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Sin existencias. Registre una entrada para agregar un lote.</td></tr>
             {% endfor %}
         </tbody>
     </table>

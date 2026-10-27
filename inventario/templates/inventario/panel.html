@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% load inventario_extras %}
+
+{% block title %}Panel de inventario · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-3xl font-extrabold text-marino">Panel de inventario</h1>
+        <p class="mt-1 text-slate-600">Existencias por categoría al {{ hoy|date:"j \d\e F \d\e Y" }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario">Ver productos</a>
+        {% if perms.inventario.view_movimiento %}
+        <a href="{% url 'reportes:mensual' %}" class="btn btn-principal">Reporte del mes</a>
+        {% endif %}
+    </div>
+</div>
+
+{# ---- Indicadores ---- #}
+<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div class="tarjeta p-4">
+        <p class="text-sm text-slate-600">Productos activos</p>
+        <p class="mt-1 text-3xl font-extrabold text-marino">{{ total_productos|miles }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ total_unidades|miles }} unidades en existencia</p>
+    </div>
+    <div class="tarjeta p-4">
+        <p class="text-sm text-slate-600">Valor del inventario</p>
+        <p class="mt-1 text-3xl font-extrabold text-marino">{{ total_valor|dinero }}</p>
+        <p class="mt-1 text-xs text-slate-500">
+            A costo de compra{% if lotes_sin_costo %} · {{ lotes_sin_costo }} lote{{ lotes_sin_costo|pluralize }} sin costo registrado{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'inventario:producto_lista' %}?filtro=bajo" class="tarjeta p-4 hover:border-coral {% if total_reabastecer %}bg-coral-claro{% endif %}">
+        <p class="text-sm text-slate-600">Por reabastecer</p>
+        <p class="mt-1 text-3xl font-extrabold {% if total_reabastecer %}text-coral-oscuro{% else %}text-marino{% endif %}">{{ total_reabastecer }}</p>
+        <p class="mt-1 text-xs text-slate-500">En o por debajo del mínimo</p>
+    </a>
+    <a href="{% url 'inventario:producto_lista' %}" class="tarjeta p-4 hover:border-coral {% if lotes_vencidos %}border-red-200 bg-red-50{% endif %}">
+        <p class="text-sm text-slate-600">Vencimientos</p>
+        <p class="mt-1 text-3xl font-extrabold {% if lotes_vencidos %}text-red-700{% else %}text-marino{% endif %}">{{ lotes_vencidos }}</p>
+        <p class="mt-1 text-xs text-slate-500">lote{{ lotes_vencidos|pluralize }} vencido{{ lotes_vencidos|pluralize }} · {{ lotes_por_vencer }} vence{{ lotes_por_vencer|pluralize:"n" }} en {{ dias_alerta }} días</p>
+    </a>
+</div>
+
+{# ---- Categorías ---- #}
+<section class="mt-8">
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <h2 class="titulo-seccion">Existencias por categoría</h2>
+        <p class="flex items-center gap-4 text-xs text-slate-600">
+            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-verde-teal" aria-hidden="true"></span>Con existencia suficiente</span>
+            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-coral" aria-hidden="true"></span>Por reabastecer</span>
+        </p>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for fila in categorias %}
+        <article class="tarjeta flex min-w-0 flex-col gap-3">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h3 class="font-bold text-marino">{% if fila.categoria %}{{ fila.categoria.nombre }}{% else %}Sin categoría{% endif %}</h3>
+                    <p class="truncate text-xs text-slate-500" title="{% if fila.categoria %}{{ fila.categoria.descripcion }}{% endif %}">
+                        {% if fila.categoria %}{{ fila.categoria.descripcion }}{% else %}Edite estos productos para asignarles una categoría.{% endif %}
+                    </p>
+                </div>
+                {% if fila.bajo_minimo %}
+                <span class="insignia shrink-0 bg-coral-claro text-xs text-coral-oscuro">{{ fila.bajo_minimo }} por reabastecer</span>
+                {% else %}
+                <span class="insignia shrink-0 bg-verde-teal-claro text-xs text-verde-teal-oscuro">En orden</span>
+                {% endif %}
+            </div>
+
+            <dl class="grid grid-cols-3 gap-2 text-center">
+                <div class="rounded-lg bg-blanco-humo px-1 py-2">
+                    <dt class="text-xs text-slate-500">Productos</dt>
+                    <dd class="text-lg font-bold text-gris-oscuro">{{ fila.productos }}</dd>
+                </div>
+                <div class="rounded-lg bg-blanco-humo px-1 py-2">
+                    <dt class="text-xs text-slate-500">Unidades</dt>
+                    <dd class="text-lg font-bold text-gris-oscuro">{{ fila.unidades|miles }}</dd>
+                </div>
+                <div class="rounded-lg bg-blanco-humo px-1 py-2">
+                    <dt class="text-xs text-slate-500">Valor</dt>
+                    <dd class="text-lg font-bold text-gris-oscuro">{{ fila.valor|dinero }}</dd>
+                </div>
+            </dl>
+
+            <div>
+                <div class="flex h-2.5 overflow-hidden rounded-full bg-coral" role="img"
+                     aria-label="{{ fila.en_orden }} de {{ fila.productos }} productos con existencia suficiente">
+                    <div class="bg-verde-teal" style="width: {{ fila.porcentaje_en_orden }}%"></div>
+                </div>
+                <p class="mt-1 text-xs text-slate-600">{{ fila.en_orden }} de {{ fila.productos }} con existencia suficiente</p>
+            </div>
+
+            <ul class="space-y-1 text-sm text-slate-600">
+                <li>Vendido este mes: <strong class="text-gris-oscuro">{{ fila.vendido_unidades|miles }} u.</strong> · {{ fila.vendido_monto|dinero }}</li>
+                {% if fila.lotes_vencidos or fila.lotes_por_vencer %}
+                <li class="{% if fila.lotes_vencidos %}text-red-700{% else %}text-coral-oscuro{% endif %}">
+                    {% if fila.lotes_vencidos %}{{ fila.lotes_vencidos }} lote{{ fila.lotes_vencidos|pluralize }} vencido{{ fila.lotes_vencidos|pluralize }}{% endif %}{% if fila.lotes_vencidos and fila.lotes_por_vencer %} · {% endif %}{% if fila.lotes_por_vencer %}{{ fila.lotes_por_vencer }} por vencer{% endif %}
+                </li>
+                {% endif %}
+            </ul>
+
+            <a href="{% url 'inventario:producto_lista' %}?categoria={% if fila.categoria %}{{ fila.categoria.pk }}{% else %}sin{% endif %}" class="enlace mt-auto text-sm">Ver productos →</a>
+        </article>
+        {% empty %}
+        <p class="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-600 sm:col-span-2 lg:col-span-3">
+            Todavía no hay productos activos. Agréguelos desde «Ver productos» y elija su categoría.
+        </p>
+        {% endfor %}
+    </div>
+
+    {% if categorias_vacias %}
+    <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4">
+        <p class="text-sm text-slate-600">Categorías sin productos todavía:</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+            {% for categoria in categorias_vacias %}
+            {% if perms.inventario.add_producto %}
+            <a href="{% url 'inventario:producto_crear' %}?categoria={{ categoria.pk }}" title="Agregar un producto a {{ categoria.nombre }}"
+               class="insignia bg-blanco-humo text-sm text-marino ring-1 ring-slate-200 hover:bg-marino-claro">+ {{ categoria.nombre }}</a>
+            {% else %}
+            <span class="insignia bg-blanco-humo text-sm text-slate-600 ring-1 ring-slate-200">{{ categoria.nombre }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<div class="mt-8 grid gap-6 lg:grid-cols-5">
+    {# ---- Movimiento del mes ---- #}
+    <section class="tarjeta lg:col-span-2">
+        <h2 class="titulo-seccion">Este mes</h2>
+        <p class="text-sm text-slate-500">Del 1 de {{ hoy|date:"F" }} a hoy</p>
+        <dl class="mt-4 divide-y divide-slate-100">
+            <div class="flex items-baseline justify-between gap-3 py-2.5">
+                <dt class="text-slate-600">Compras</dt>
+                <dd class="text-right"><strong class="text-gris-oscuro">{{ mes.compras.monto|dinero }}</strong> <span class="text-sm text-slate-500">· {{ mes.compras.unidades|miles }} u.</span></dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3 py-2.5">
+                <dt class="text-slate-600">Ventas</dt>
+                <dd class="text-right"><strong class="text-gris-oscuro">{{ mes.ventas.monto|dinero }}</strong> <span class="text-sm text-slate-500">· {{ mes.ventas.unidades|miles }} u.</span></dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3 py-2.5">
+                <dt class="text-slate-600">Uso en consulta</dt>
+                <dd class="text-right"><strong class="text-gris-oscuro">{{ mes.uso.unidades|miles }} u.</strong> <span class="text-sm text-slate-500">· {{ mes.uso.monto|dinero }} a costo</span></dd>
+            </div>
+            <div class="flex items-baseline justify-between gap-3 py-2.5">
+                <dt class="text-slate-600">Vencido o dañado</dt>
+                <dd class="text-right"><strong class="text-gris-oscuro">{{ mes.merma.unidades|miles }} u.</strong> <span class="text-sm text-slate-500">· {{ mes.merma.monto|dinero }} a costo</span></dd>
+            </div>
+        </dl>
+        {% if perms.inventario.view_movimiento %}
+        <a href="{% url 'reportes:mensual' %}" class="enlace mt-3 inline-block text-sm">Ver el reporte completo del mes →</a>
+        {% endif %}
+    </section>
+
+    {# ---- Por reabastecer ---- #}
+    <section class="tarjeta min-w-0 lg:col-span-3">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="titulo-seccion">Por reabastecer</h2>
+            {% if total_reabastecer > reabastecer|length %}
+            <a href="{% url 'inventario:producto_lista' %}?filtro=bajo" class="enlace shrink-0 text-sm">Ver los {{ total_reabastecer }}</a>
+            {% endif %}
+        </div>
+        {% if reabastecer %}
+        <div class="mt-3 overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="text-left text-slate-500">
+                    <tr>
+                        <th class="py-2 pr-3 font-medium">Producto</th>
+                        <th class="py-2 pr-3 font-medium">Categoría</th>
+                        <th class="py-2 pr-3 text-right font-medium">Existencia</th>
+                        <th class="py-2 text-right font-medium">Mínimo</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for p in reabastecer %}
+                    <tr>
+                        <td class="py-2 pr-3"><a href="{% url 'inventario:producto_detalle' p.pk %}" class="enlace">{{ p.nombre }}</a></td>
+                        <td class="py-2 pr-3 text-slate-600">{{ p.categoria.nombre|default:"—" }}</td>
+                        <td class="py-2 pr-3 text-right font-semibold tabular-nums {% if p.stock_total == 0 %}text-red-700{% else %}text-coral-oscuro{% endif %}">{{ p.stock_total|miles }}</td>
+                        <td class="py-2 text-right tabular-nums text-slate-500">{{ p.stock_minimo|miles }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="mt-4 rounded-xl bg-verde-teal-claro p-4 text-sm font-medium text-verde-teal-oscuro">Todos los productos activos están sobre su mínimo.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

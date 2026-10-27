@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load inventario_extras %}
 {% block title %}{{ titulo }} · Inventario{% endblock %}
 {% block content %}
 <div class="max-w-xl">
     <a href="{% url 'inventario:producto_detalle' producto.pk %}" class="enlace text-sm">← Cancelar</a>
     <h1 class="mt-2 text-3xl font-extrabold text-marino">{{ titulo }}</h1>
-    <p class="mt-1 mb-6 text-slate-600">{{ producto.nombre }} · existencia actual: <strong>{{ producto.stock_actual }} {{ producto.unidad_medida }}</strong></p>
+    <p class="mt-1 mb-6 text-slate-600">{{ producto.nombre }} · existencia actual: <strong>{{ producto.stock_actual }} {{ producto.unidad_medida }}</strong>{% if tipo == 'SAL' and producto.precio_venta %} · precio de venta: <strong>{{ producto.precio_venta|dinero }}</strong>{% endif %}</p>
     {% if tipo == 'SAL' %}
     <p class="mb-4 rounded-lg border border-marino-claro bg-marino-claro px-4 py-3 text-sm text-marino">Se descuenta primero del lote que vence antes. Los lotes vencidos no se usan.</p>
     {% endif %}

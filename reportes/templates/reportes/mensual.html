@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load inventario_extras %}
+
+{% block title %}Reporte de {{ r.titulo|lower }} · Clínica Familiar{% endblock %}
+
+{% block content %}
+{# Encabezado que solo sale al imprimir (el menú del sistema no se imprime) #}
+<div class="mb-6 hidden border-b border-slate-300 pb-3 print:block">
+    <p class="text-xl font-extrabold text-marino">Clínica Familiar</p>
+    <p class="text-sm text-slate-600">Reporte mensual · generado el {{ r.generado|date:"d/m/Y \a \l\a\s H:i" }}</p>
+</div>
+
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <p class="text-sm font-semibold uppercase tracking-wider text-verde-teal-oscuro">Reporte mensual</p>
+        <h1 class="text-3xl font-extrabold text-marino">{{ r.titulo }}</h1>
+        <p class="mt-1 text-slate-600">
+            Del {{ r.desde|date:"j \d\e F" }} al {{ r.hasta|date:"j \d\e F \d\e Y" }}{% if r.en_curso %} · mes en curso, datos hasta hoy{% endif %}
+        </p>
+    </div>
+    <div class="flex flex-wrap gap-2 print:hidden">
+        <button type="button" id="imprimir" class="btn btn-secundario">Imprimir o guardar PDF</button>
+        <a href="?mes={{ valor_mes }}&amp;formato=csv" class="btn btn-principal">Descargar para Excel</a>
+    </div>
+</div>
+
+<div class="tarjeta mb-6 flex flex-wrap items-center justify-between gap-3 p-4 print:hidden">
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="?mes={{ mes_anterior }}" class="btn btn-secundario btn-chico">← {{ r.titulo_anterior }}</a>
+        {% if not r.en_curso and not r.futuro %}
+        <a href="?mes={{ mes_siguiente }}" class="btn btn-secundario btn-chico">Mes siguiente →</a>
+        {% endif %}
+    </div>
+    <form method="get" class="flex items-center gap-2">
+        <label for="mes" class="text-sm font-medium">Ver otro mes</label>
+        <input id="mes" type="month" name="mes" value="{{ valor_mes }}" class="campo w-auto py-1.5" required>
+        <button type="submit" class="btn btn-principal btn-chico">Ver</button>
+    </form>
+</div>
+
+{% if r.futuro %}
+<p class="mb-6 rounded-lg bg-marino-claro px-4 py-3 text-sm text-marino">Este mes todavía no empieza: solo aparecen las citas que ya están agendadas.</p>
+{% endif %}
+
+{# ---- Resumen con comparación ---- #}
+{% if r.comparacion %}
+<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    {% for fila in r.comparacion %}
+    <div class="tarjeta break-inside-avoid p-4">
+        <p class="text-sm text-slate-600">{{ fila.nombre }}</p>
+        <p class="mt-1 text-3xl font-extrabold text-marino">{% if fila.dinero %}{{ fila.actual|dinero }}{% else %}{{ fila.actual|miles }}{% endif %}</p>
+        <p class="mt-1 text-xs text-slate-500">
+            {% if fila.variacion is None %}
+            {{ r.titulo_anterior }}: {% if fila.dinero %}{{ fila.anterior|dinero }}{% else %}{{ fila.anterior|miles }}{% endif %}
+            {% else %}
+            <span class="font-semibold text-gris-oscuro">{% if fila.variacion > 0 %}▲ {{ fila.variacion_abs }} %{% elif fila.variacion < 0 %}▼ {{ fila.variacion_abs }} %{% else %}Igual{% endif %}</span>
+            que en {{ r.titulo_anterior|lower }} ({% if fila.dinero %}{{ fila.anterior|dinero }}{% else %}{{ fila.anterior|miles }}{% endif %})
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ---- Atención ---- #}
+{% if r.citas or r.pacientes %}
+<section class="mt-8">
+    <h2 class="titulo-seccion mb-3">Atención a pacientes</h2>
+    <div class="grid gap-6 lg:grid-cols-3">
+        {% if r.citas %}
+        <div class="tarjeta break-inside-avoid">
+            <h3 class="font-bold text-marino">Citas del mes</h3>
+            <p class="text-sm text-slate-500">{{ r.citas.total }} en total · {{ r.citas.pacientes_atendidos }} paciente{{ r.citas.pacientes_atendidos|pluralize }} atendido{{ r.citas.pacientes_atendidos|pluralize }}</p>
+            <table class="mt-3 w-full text-sm">
+                <tbody class="divide-y divide-slate-100">
+                    {% for estado in r.citas.por_estado %}
+                    <tr>
+                        <td class="py-2 text-slate-600">{{ estado.nombre }}</td>
+                        <td class="py-2 text-right font-semibold tabular-nums">{{ estado.cantidad }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="mt-3 text-xs text-slate-500">
+                Recordatorios por SMS: {{ r.citas.recordatorios.enviados }} enviado{{ r.citas.recordatorios.enviados|pluralize }}{% if r.citas.recordatorios.simulados %}, {{ r.citas.recordatorios.simulados }} simulado{{ r.citas.recordatorios.simulados|pluralize }}{% endif %}{% if r.citas.recordatorios.con_error %}, {{ r.citas.recordatorios.con_error }} con error{% endif %}.
+            </p>
+        </div>
+
+        <div class="tarjeta break-inside-avoid">
+            <h3 class="font-bold text-marino">Por médico</h3>
+            {% if r.citas.por_medico %}
+            <table class="mt-3 w-full text-sm">
+                <thead class="text-left text-slate-500">
+                    <tr><th class="py-2 font-medium">Médico</th><th class="py-2 text-right font-medium">Citas</th><th class="py-2 text-right font-medium">Atendidas</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for medico in r.citas.por_medico %}
+                    <tr>
+                        <td class="py-2 pr-2">{{ medico.nombre }}</td>
+                        <td class="py-2 text-right tabular-nums">{{ medico.total }}</td>
+                        <td class="py-2 text-right font-semibold tabular-nums">{{ medico.atendidas }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="mt-3 text-sm text-slate-500">No hubo citas este mes.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if r.pacientes %}
+        <div class="tarjeta break-inside-avoid">
+            <h3 class="font-bold text-marino">Pacientes</h3>
+            <dl class="mt-3 divide-y divide-slate-100 text-sm">
+                <div class="flex justify-between py-2"><dt class="text-slate-600">Registrados en el mes</dt><dd class="font-semibold tabular-nums">{{ r.pacientes.nuevos|miles }}</dd></div>
+                <div class="flex justify-between py-2"><dt class="text-slate-600">Activos al cierre del mes</dt><dd class="font-semibold tabular-nums">{{ r.pacientes.activos|miles }}</dd></div>
+            </dl>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{# ---- Inventario ---- #}
+{% if r.inventario %}
+{% with inv=r.inventario %}
+<section class="mt-8">
+    <h2 class="titulo-seccion mb-3">Inventario: compras, ventas y salidas</h2>
+    <div class="grid gap-6 lg:grid-cols-5">
+        <div class="tarjeta break-inside-avoid min-w-0 lg:col-span-3">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-left text-slate-500">
+                        <tr>
+                            <th class="py-2 font-medium">Concepto</th>
+                            <th class="py-2 pl-3 text-right font-medium">Unidades</th>
+                            <th class="py-2 pl-3 text-right font-medium">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for fila in inv.conceptos %}
+                        <tr>
+                            <td class="py-2 pr-2">
+                                {{ fila.nombre }}
+                                {% if fila.clave == 'USO' or fila.clave == 'MERMA' or fila.clave == 'AJUSTE_SAL' or fila.clave == 'AJUSTE_ENT' %}<span class="text-xs text-slate-500">(a costo)</span>{% endif %}
+                                {% if fila.sin_precio and fila.unidades %}<span class="block text-xs text-coral-oscuro">{{ fila.sin_precio }} sin {% if fila.clave == 'VENTA' %}precio{% else %}costo{% endif %} registrado</span>{% endif %}
+                            </td>
+                            <td class="py-2 pl-3 text-right tabular-nums {% if fila.sentido == 'entrada' and fila.unidades %}text-verde-teal-oscuro{% endif %}">{% if fila.unidades %}{% if fila.sentido == 'entrada' %}+{% else %}−{% endif %}{% endif %}{{ fila.unidades|miles }}</td>
+                            <td class="py-2 pl-3 text-right font-semibold tabular-nums">{{ fila.monto|dinero }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tarjeta break-inside-avoid lg:col-span-2">
+            <h3 class="font-bold text-marino">Ganancia bruta estimada</h3>
+            <p class="mt-2 text-3xl font-extrabold {% if inv.margen.margen < 0 %}text-red-700{% else %}text-verde-teal-oscuro{% endif %}">{{ inv.margen.margen|dinero }}</p>
+            {% if inv.margen.porcentaje is not None %}<p class="text-sm text-slate-600">{{ inv.margen.porcentaje }} % de lo vendido</p>{% endif %}
+            <dl class="mt-3 divide-y divide-slate-100 text-sm">
+                <div class="flex justify-between py-2"><dt class="text-slate-600">Ventas</dt><dd class="tabular-nums">{{ inv.margen.ingreso|dinero }}</dd></div>
+                <div class="flex justify-between py-2"><dt class="text-slate-600">Costo de lo vendido</dt><dd class="tabular-nums">− {{ inv.margen.costo|dinero }}</dd></div>
+            </dl>
+            <p class="mt-2 text-xs text-slate-500">
+                Precio de venta menos lo que costó cada unidad en su lote.
+                {% if inv.margen.incompletas %}No incluye {{ inv.margen.incompletas }} venta{{ inv.margen.incompletas|pluralize }} sin precio o sin costo registrado.{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <div class="tarjeta break-inside-avoid">
+            <h3 class="font-bold text-marino">Ventas por categoría</h3>
+            {% if inv.ventas_por_categoria %}
+            <ul class="mt-3 space-y-3">
+                {% for fila in inv.ventas_por_categoria %}
+                <li>
+                    <div class="flex items-baseline justify-between gap-3 text-sm">
+                        <span>{{ fila.categoria }}</span>
+                        <span class="shrink-0 tabular-nums"><strong>{{ fila.monto|dinero }}</strong> <span class="text-slate-500">· {{ fila.unidades|miles }} u.</span></span>
+                    </div>
+                    <div class="mt-1 h-2 rounded-full bg-marino-claro print:border print:border-slate-300">
+                        <div class="h-2 rounded-full bg-marino" style="width: {{ fila.porcentaje }}%"></div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-3 text-sm text-slate-500">No hubo ventas este mes.</p>
+            {% endif %}
+        </div>
+
+        <div class="tarjeta break-inside-avoid">
+            <h3 class="font-bold text-marino">Productos más vendidos</h3>
+            {% if inv.mas_vendidos %}
+            <ol class="mt-3 divide-y divide-slate-100 text-sm">
+                {% for fila in inv.mas_vendidos %}
+                <li class="flex items-baseline justify-between gap-3 py-2">
+                    <span><span class="mr-2 font-bold text-slate-400">{{ forloop.counter }}.</span>{{ fila.producto }}</span>
+                    <span class="shrink-0 tabular-nums"><strong>{{ fila.unidades|miles }} u.</strong> <span class="text-slate-500">· {{ fila.monto|dinero }}</span></span>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="mt-3 text-sm text-slate-500">No hubo ventas este mes.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endwith %}
+{% endif %}
+
+<p class="mt-8 text-xs text-slate-500">
+    Generado el {{ r.generado|date:"d/m/Y \a \l\a\s H:i" }} por {{ user.get_full_name|default:user.username }}.
+    {% if not r.inventario %}Su usuario no tiene permiso para ver el dinero del inventario.{% endif %}
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById("imprimir").addEventListener("click", function () { window.print(); });
+</script>
+{% endblock %}

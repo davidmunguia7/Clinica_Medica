@@ -11,6 +11,11 @@ paciente en un establecimiento de salud:
 
 El domicilio usa la división territorial vigente desde el 1 de mayo de 2024:
 14 departamentos, 44 municipios y 262 distritos.
+
+Los datos sensibles (documento, domicilio, teléfonos, familia e historial
+clínico) se guardan cifrados con Fernet: ver sistema_clinico/cifrado.py y
+docs/seguridad.md. Nombres, fecha de nacimiento y sexo quedan sin cifrar
+porque se usan para buscar y ordenar.
 """
 import re
 import unicodedata
@@ -20,6 +25,8 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
+
+from sistema_clinico.cifrado import CampoCifrado, CorreoCifrado, huella
 
 from .validators import (
     normalizar_dui,
@@ -174,11 +181,12 @@ class Paciente(models.Model):
         choices=TipoDocumento.choices,
         default=TipoDocumento.DUI,
     )
-    numero_documento = models.CharField("número de documento", max_length=30, blank=True)
-    # Documento normalizado ("DUI:012345678"). Es único para que un mismo
-    # documento no se registre dos veces; queda vacío (NULL) si no hay documento.
-    documento_clave = models.CharField(
-        max_length=45, unique=True, null=True, blank=True, editable=False
+    numero_documento = CampoCifrado("número de documento", max_length=30, blank=True)
+    # Huella (HMAC-SHA256) del documento normalizado: permite buscar por documento y
+    # evitar que se registre dos veces sin guardarlo en claro. Queda vacía (NULL) si
+    # el paciente no presenta documento.
+    documento_huella = models.CharField(
+        max_length=64, unique=True, null=True, blank=True, editable=False
     )
     nombres = models.CharField(max_length=100)
     primer_apellido = models.CharField("primer apellido", max_length=60)
@@ -216,12 +224,12 @@ class Paciente(models.Model):
         Distrito, on_delete=models.PROTECT, related_name="pacientes"
     )
     area = models.CharField("área", max_length=1, choices=Area.choices)
-    direccion = models.CharField(
+    direccion = CampoCifrado(
         "dirección",
         max_length=255,
         help_text="Colonia, barrio, cantón o caserío; calle o pasaje; número de casa.",
     )
-    punto_referencia = models.CharField(
+    punto_referencia = CampoCifrado(
         "punto de referencia",
         max_length=150,
         blank=True,
@@ -229,11 +237,11 @@ class Paciente(models.Model):
     )
 
     # --- Contacto -----------------------------------------------------------
-    telefono = models.CharField("teléfono", max_length=9, validators=[validar_telefono])
-    telefono_alterno = models.CharField(
+    telefono = CampoCifrado("teléfono", max_length=9, validators=[validar_telefono])
+    telefono_alterno = CampoCifrado(
         "teléfono alterno", max_length=9, blank=True, validators=[validar_telefono]
     )
-    correo = models.EmailField("correo electrónico", blank=True)
+    correo = CorreoCifrado("correo electrónico", blank=True)
 
     # --- Afiliación ---------------------------------------------------------
     afiliacion = models.CharField(
@@ -242,32 +250,32 @@ class Paciente(models.Model):
         choices=Afiliacion.choices,
         default=Afiliacion.NINGUNA,
     )
-    numero_afiliacion = models.CharField("número de afiliación", max_length=30, blank=True)
+    numero_afiliacion = CampoCifrado("número de afiliación", max_length=30, blank=True)
 
     # --- Familia y responsable ----------------------------------------------
-    nombre_madre = models.CharField("nombre de la madre", max_length=150, blank=True)
-    nombre_padre = models.CharField("nombre del padre", max_length=150, blank=True)
-    responsable_nombre = models.CharField(
+    nombre_madre = CampoCifrado("nombre de la madre", max_length=150, blank=True)
+    nombre_padre = CampoCifrado("nombre del padre", max_length=150, blank=True)
+    responsable_nombre = CampoCifrado(
         "nombre del responsable", max_length=150, blank=True
     )
     responsable_parentesco = models.CharField(
         "parentesco", max_length=10, choices=Parentesco.choices, blank=True
     )
-    responsable_dui = models.CharField(
+    responsable_dui = CampoCifrado(
         "DUI del responsable", max_length=10, blank=True, validators=[validar_dui]
     )
-    responsable_telefono = models.CharField(
+    responsable_telefono = CampoCifrado(
         "teléfono del responsable", max_length=9, blank=True, validators=[validar_telefono]
     )
 
     # --- Datos del registro (Norma técnica del expediente, art. 15) ---------
-    datos_proporcionados_por = models.CharField(
+    datos_proporcionados_por = CampoCifrado(
         "datos proporcionados por",
         max_length=150,
         blank=True,
         help_text="Déjelo vacío si los dio el mismo paciente. Si no, nombre y parentesco.",
     )
-    observaciones = models.TextField(blank=True)
+    observaciones = CampoCifrado(blank=True, multilinea=True)
     consentimiento_datos = models.BooleanField(
         "consentimiento para el tratamiento de datos personales", default=False
     )
@@ -343,6 +351,24 @@ class Paciente(models.Model):
         else:
             valor = re.sub(r"[^0-9A-Z]", "", numero.upper())
         return f"{tipo}:{valor}" if valor else None
+
+    @classmethod
+    def calcular_huella_documento(cls, tipo, numero):
+        """Huella del documento: igual para el mismo documento (DUI con o sin guion).
+
+        Es un HMAC-SHA256 con la clave de cifrado, así que no permite recuperar el número.
+        """
+        return huella(cls.calcular_clave_documento(tipo, numero))
+
+    @classmethod
+    def huellas_para_buscar(cls, texto):
+        """Huellas del texto como si fuera cada tipo de documento (para el buscador).
+
+        Como el documento está cifrado, solo se encuentra si se escribe completo.
+        """
+        huellas = {cls.calcular_huella_documento(tipo, texto) for tipo in cls.TipoDocumento.values}
+        huellas.discard(None)
+        return sorted(huellas)
 
     # --- Validación ---------------------------------------------------------
     def clean(self):
@@ -448,9 +474,10 @@ class Paciente(models.Model):
     # --- Guardado -----------------------------------------------------------
     def save(self, *args, **kwargs):
         self._normalizar()
-        self.documento_clave = self.calcular_clave_documento(
+        self.documento_huella = self.calcular_huella_documento(
             self.tipo_documento, self.numero_documento
         )
+        # Solo nombres: el documento NO va aquí porque este campo no está cifrado.
         self.texto_busqueda = normalizar_busqueda(
             " ".join(
                 [
@@ -459,8 +486,6 @@ class Paciente(models.Model):
                     self.segundo_apellido,
                     self.apellido_casada,
                     self.conocido_por,
-                    self.numero_documento,
-                    solo_digitos(self.numero_documento),
                 ]
             )
         )[:500]
@@ -468,7 +493,7 @@ class Paciente(models.Model):
             self.fecha_consentimiento = timezone.now()
         if kwargs.get("update_fields") is not None:
             kwargs["update_fields"] = set(kwargs["update_fields"]) | {
-                "documento_clave",
+                "documento_huella",
                 "texto_busqueda",
                 "fecha_consentimiento",
             }
@@ -514,25 +539,34 @@ class HistorialClinico(models.Model):
         "número de expediente", max_length=20, unique=True, editable=False
     )
     fecha_apertura = models.DateTimeField("fecha de apertura", auto_now_add=True)
-    tipo_sangre = models.CharField(
+    # Todo el historial es dato de salud: se guarda cifrado.
+    tipo_sangre = CampoCifrado(
         "tipo de sangre", max_length=3, choices=TipoSangre.choices, blank=True
     )
-    alergias = models.TextField(
+    alergias = CampoCifrado(
         blank=True,
+        multilinea=True,
         help_text="Medicamentos, alimentos u otras sustancias. Vacío si no refiere.",
     )
-    enfermedades_cronicas = models.TextField(
-        "enfermedades crónicas", blank=True, help_text="Ej.: hipertensión, diabetes, asma."
+    enfermedades_cronicas = CampoCifrado(
+        "enfermedades crónicas",
+        blank=True,
+        multilinea=True,
+        help_text="Ej.: hipertensión, diabetes, asma.",
     )
-    medicamentos_actuales = models.TextField("medicamentos de uso continuo", blank=True)
-    antecedentes_personales = models.TextField(
+    medicamentos_actuales = CampoCifrado(
+        "medicamentos de uso continuo", blank=True, multilinea=True
+    )
+    antecedentes_personales = CampoCifrado(
         "antecedentes personales",
         blank=True,
+        multilinea=True,
         help_text="Cirugías, hospitalizaciones, enfermedades importantes.",
     )
-    antecedentes_familiares = models.TextField(
+    antecedentes_familiares = CampoCifrado(
         "antecedentes familiares",
         blank=True,
+        multilinea=True,
         help_text="Enfermedades de padres, hermanos o abuelos.",
     )
     fecha_actualizacion = models.DateTimeField("última actualización", auto_now=True)

@@ -15,6 +15,8 @@
     {% url 'pacientes:lista' as url_pacientes %}
     {% url 'pacientes:registrar' as url_registrar %}
     {% url 'inventario:producto_lista' as url_inventario %}
+    {% url 'citas:agenda' as url_citas %}
+    {% url 'reportes:mensual' as url_reportes %}
     {% with ns=request.resolver_match.namespace vista=request.resolver_match.url_name %}
     <header class="border-b border-slate-200 bg-white print:hidden">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
@@ -24,19 +26,28 @@
             </a>
 
             {% if user.is_authenticated %}
-            <nav class="order-last -mb-3 flex w-full gap-1 text-sm font-semibold sm:order-none sm:mb-0 sm:w-auto" aria-label="Menú principal">
+            {# En pantallas chicas el menú va en su propia fila y se desliza de lado si no cabe #}
+            <nav class="order-last -mb-3 flex w-full gap-1 overflow-x-auto whitespace-nowrap text-sm font-semibold lg:order-none lg:mb-0 lg:w-auto lg:overflow-visible" aria-label="Menú principal">
                 {% if url_inicio %}
                 <a href="{{ url_inicio }}" {% if vista == 'inicio' %}aria-current="page"{% endif %}
-                   class="border-b-2 px-3 py-3 sm:py-2 {% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
                 {% endif %}
                 {% if url_pacientes and perms.pacientes.view_paciente %}
                 <a href="{{ url_pacientes }}" {% if ns == 'pacientes' %}aria-current="page"{% endif %}
-                   class="border-b-2 px-3 py-3 sm:py-2 {% if ns == 'pacientes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Pacientes</a>
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'pacientes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Pacientes</a>
+                {% endif %}
+                {% if url_citas and perms.citas.view_cita %}
+                <a href="{{ url_citas }}" {% if ns == 'citas' %}aria-current="page"{% endif %}
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'citas' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Citas</a>
                 {% endif %}
                 {% if url_inventario and perms.inventario.view_producto %}
                 <a href="{{ url_inventario }}" {% if ns == 'inventario' %}aria-current="page"{% endif %}
-                   class="border-b-2 px-3 py-3 sm:py-2 {% if ns == 'inventario' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inventario</a>
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'inventario' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inventario</a>
                 {% endif %}
+                {% if url_reportes %}{% if perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_movimiento %}
+                <a href="{{ url_reportes }}" {% if ns == 'reportes' %}aria-current="page"{% endif %}
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'reportes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Reportes</a>
+                {% endif %}{% endif %}
             </nav>
 
             <div class="ml-auto flex items-center gap-3">
@@ -46,7 +57,7 @@
                 <a href="{{ url_registrar }}" class="btn btn-acento btn-chico hidden md:inline-flex">+ Registrar paciente</a>
                 {% endif %}
                 {% endblock %}
-                <span class="hidden text-sm text-slate-600 lg:inline">{{ user.get_full_name|default:user.username }}</span>
+                <span class="hidden text-sm text-slate-600 xl:inline">{{ user.get_full_name|default:user.username }}</span>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-secundario btn-chico">Salir</button>
@@ -78,6 +89,18 @@
         </div>
     </footer>
 
+    {% if user.is_authenticated %}
+    <script>
+        // En celulares el menú se desliza de lado: se deja a la vista la opción de la página actual
+        (function () {
+            var menu = document.querySelector('nav[aria-label="Menú principal"]');
+            var actual = menu && menu.querySelector('[aria-current="page"]');
+            if (actual && menu.scrollWidth > menu.clientWidth) {
+                menu.scrollLeft = actual.offsetLeft - menu.offsetLeft - 16;
+            }
+        })();
+    </script>
+    {% endif %}
     {% block scripts %}{% endblock %}
 </body>
 </html>

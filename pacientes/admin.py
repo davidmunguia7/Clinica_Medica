@@ -55,10 +55,18 @@ class PacienteAdmin(admin.ModelAdmin):
         "segundo_apellido",
         "apellido_casada",
         "conocido_por",
-        "numero_documento",
         "historial__numero_expediente",
     )
     readonly_fields = ("registrado_por", "fecha_registro", "fecha_actualizacion", "fecha_consentimiento")
+
+    def get_search_results(self, request, queryset, search_term):
+        # El documento está cifrado: se busca por su huella (escribiéndolo completo).
+        resultados, puede_repetir = super().get_search_results(request, queryset, search_term)
+        if search_term.strip():
+            huellas = Paciente.huellas_para_buscar(search_term.strip())
+            if huellas:
+                resultados |= queryset.filter(documento_huella__in=huellas)
+        return resultados, puede_repetir
 
     def get_inlines(self, request, obj):
         # Al crear, el expediente se genera solo; se edita desde la ficha ya guardada.

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load citas_extras %}
 
 {% block title %}Inicio · Clínica Familiar{% endblock %}
 
@@ -24,8 +25,9 @@
     </div>
 </section>
 
-{% if perms.pacientes.view_paciente %}
-<div class="mt-6 grid grid-cols-3 gap-3 sm:mt-8 sm:gap-4">
+{% if perms.pacientes.view_paciente or perms.citas.view_cita %}
+<div class="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 lg:grid-cols-4">
+    {% if perms.pacientes.view_paciente %}
     <div class="tarjeta flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-marino-claro text-marino sm:h-12 sm:w-12" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 sm:h-6 sm:w-6"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.3a5 5 0 0 1 5 5.7"/></svg>
@@ -53,12 +55,54 @@
             <p class="text-xs text-slate-600 sm:text-sm">Registrados este mes</p>
         </div>
     </div>
+    {% endif %}
+    {% if perms.citas.view_cita %}
+    <a href="{% url 'citas:agenda' %}" class="tarjeta flex flex-col gap-3 p-4 hover:border-verde-teal sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-verde-teal-claro text-verde-teal-oscuro sm:h-12 sm:w-12" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 sm:h-6 sm:w-6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/></svg>
+        </span>
+        <div>
+            <p class="text-2xl font-extrabold text-marino sm:text-3xl">{{ citas_hoy|length }}</p>
+            <p class="text-xs text-slate-600 sm:text-sm">Citas de hoy</p>
+            {% if citas_hoy_pendientes %}<p class="text-xs text-slate-500">{{ citas_hoy_pendientes }} por atender</p>{% endif %}
+        </div>
+    </a>
+    {% endif %}
 </div>
 {% endif %}
 
 <div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-3">
+    {% if perms.pacientes.view_paciente or perms.citas.view_cita %}
+    <div class="min-w-0 space-y-6 lg:col-span-2">
+    {% if perms.citas.view_cita %}
+    <section class="tarjeta min-w-0">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="titulo-seccion">Citas de hoy</h2>
+            <a href="{% url 'citas:agenda' %}" class="enlace shrink-0 whitespace-nowrap text-sm">Ver agenda</a>
+        </div>
+        {% if citas_hoy %}
+        <ul class="mt-3 divide-y divide-slate-100">
+            {% for cita in citas_hoy %}
+            <li>
+                <a href="{{ cita.get_absolute_url }}" class="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-blanco-humo">
+                    <span class="w-24 shrink-0 whitespace-nowrap font-bold text-marino">{{ cita.fecha_hora|hora12 }}</span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate font-semibold text-marino">{{ cita.paciente.nombre_completo }}</span>
+                        <span class="block truncate text-sm text-slate-500">{% if cita.medico %}{{ cita.nombre_medico }}{% else %}Médico sin asignar{% endif %}</span>
+                    </span>
+                    {# En el celular no cabe el estado: se ve en la agenda #}
+                    <span class="hidden sm:block">{% include "citas/_estado.html" with cita=cita %}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">No hay citas para hoy.</p>
+        {% endif %}
+    </section>
+    {% endif %}
     {% if perms.pacientes.view_paciente %}
-    <section class="tarjeta min-w-0 lg:col-span-2">
+    <section class="tarjeta min-w-0">
         <div class="flex items-center justify-between gap-3">
             <h2 class="titulo-seccion">Últimos pacientes registrados</h2>
             <a href="{% url 'pacientes:lista' %}" class="enlace shrink-0 whitespace-nowrap text-sm">Ver todos</a>
@@ -82,6 +126,8 @@
         <p class="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">Todavía no hay pacientes registrados.</p>
         {% endif %}
     </section>
+    {% endif %}
+    </div>
     {% else %}
     <section class="tarjeta min-w-0 lg:col-span-2">
         <h2 class="titulo-seccion">Bienvenido(a) al sistema</h2>
@@ -93,13 +139,19 @@
     {% endif %}
 
     <section class="tarjeta min-w-0">
-        {% if perms.pacientes.add_paciente or perms.pacientes.view_paciente or perms.inventario.view_producto %}
+        {% if perms.pacientes.add_paciente or perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_producto %}
         <h2 class="titulo-seccion">Accesos rápidos</h2>
         <div class="mt-4 space-y-3">
             {% if perms.pacientes.add_paciente %}
             <a href="{% url 'pacientes:registrar' %}" class="btn btn-acento w-full">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg>
                 Registrar paciente
+            </a>
+            {% endif %}
+            {% if perms.citas.add_cita %}
+            <a href="{% url 'citas:nueva' %}" class="btn btn-principal w-full">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>
+                Agendar cita
             </a>
             {% endif %}
             {% if perms.pacientes.view_paciente %}
@@ -110,6 +162,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>
                 Inventario de medicamentos
             </a>
+            <a href="{% url 'inventario:panel' %}" class="btn btn-secundario w-full">Panel por categorías</a>
+            {% endif %}
+            {% if perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_movimiento %}
+            <a href="{% url 'reportes:mensual' %}" class="btn btn-secundario w-full">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+                Reporte del mes
+            </a>
             {% endif %}
         </div>
         <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Otros módulos</h3>
@@ -117,13 +176,6 @@
         <h2 class="titulo-seccion">Módulos del sistema</h2>
         {% endif %}
         <ul class="mt-2 space-y-2 text-sm">
-            <li class="flex items-center justify-between gap-2 rounded-lg bg-blanco-humo px-3 py-2">
-                <span class="flex items-center gap-2 text-slate-600">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-                    Agenda de citas
-                </span>
-                <span class="insignia shrink-0 bg-white text-xs text-slate-500 ring-1 ring-slate-200">Próximamente</span>
-            </li>
             <li class="flex items-center justify-between gap-2 rounded-lg bg-blanco-humo px-3 py-2">
                 <span class="flex items-center gap-2 text-slate-600">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg>

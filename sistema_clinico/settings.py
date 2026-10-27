@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     # Módulos del sistema
     'pacientes',
     'inventario',
+    'citas',
+    'reportes',
 ]
 
 
@@ -62,6 +64,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Todas las páginas piden iniciar sesión, menos la de entrar (Django 5.1 o más nuevo).
+    'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -158,3 +162,21 @@ MAILERS = {
 }
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+
+# Cifrado de los datos sensibles con Fernet (ver docs/seguridad.md).
+# La clave va en el .env y se genera con: python manage.py generar_clave_cifrado --guardar
+CLAVE_CIFRADO = os.getenv('CLAVE_CIFRADO', '')
+# Si falta la clave, en desarrollo se usa una derivada de SECRET_KEY y Django avisa;
+# con DEBUG = False el sistema no arranca sin clave.
+CIFRADO_PERMITIR_CLAVE_DESARROLLO = DEBUG
+
+# Recordatorios de cita por SMS (ver docs/recordatorios.md). Por ahora se simulan.
+SMS_BACKEND = os.getenv('SMS_BACKEND', 'citas.sms.BackendSimulado')
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
+TWILIO_NUMERO = os.getenv('TWILIO_NUMERO', '')
+
+# Datos de la clínica que aparecen en los mensajes a los pacientes
+CLINICA_NOMBRE = 'Clínica Familiar'
+CLINICA_TELEFONO = os.getenv('CLINICA_TELEFONO', '')

@@ -1,11 +1,20 @@
+import re
+import tempfile
 from datetime import date, timedelta
+from io import StringIO
+from pathlib import Path
 
+from cryptography.fernet import Fernet
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.management import CommandError, call_command
+from django.db import connection
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+
+from sistema_clinico import cifrado
 
 from .forms import PacienteForm
 from .models import (
@@ -176,7 +185,7 @@ class PacienteModeloTests(TestCase):
         # En SQL Server el índice único filtrado debe permitir varios NULL
         crear_paciente(tipo_documento="NINGUNO", numero_documento="", observaciones="Emergencia")
         crear_paciente(tipo_documento="NINGUNO", numero_documento="", observaciones="Emergencia", nombres="Pedro")
-        self.assertEqual(Paciente.objects.filter(documento_clave__isnull=True).count(), 2)
+        self.assertEqual(Paciente.objects.filter(documento_huella__isnull=True).count(), 2)
 
     def test_texto_de_busqueda_sin_tildes(self):
         paciente = crear_paciente(nombres="José Ángel", primer_apellido="Peña")
@@ -388,3 +397,110 @@ class VistasTests(TestCase):
         paciente.refresh_from_db()
         self.assertTrue(paciente.activo)
         self.assertEqual(self.client.get(url).status_code, 405)
+
+
+
+# ---------------------------------------------------------------------------
+# Cifrado de los datos sensibles (Fernet)
+# ---------------------------------------------------------------------------
+
+CLAVE_1 = Fernet.generate_key().decode()
+CLAVE_2 = Fernet.generate_key().decode()
+
+
+def valores_en_la_base(paciente, *campos):
+    """Lo que de verdad quedó guardado en la tabla, sin descifrar."""
+    columnas = ", ".join(connection.ops.quote_name(campo) for campo in campos)
+    tabla = connection.ops.quote_name(Paciente._meta.db_table)
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT {columnas} FROM {tabla} WHERE id = %s", [paciente.pk])
+        return cursor.fetchone()
+
+
+@override_settings(CLAVE_CIFRADO=CLAVE_1)
+class CifradoTests(TestCase):
+    def test_datos_sensibles_se_guardan_cifrados(self):
+        paciente = crear_paciente(numero_documento=DUI_1, correo="maria@example.com")
+        guardados = valores_en_la_base(paciente, "numero_documento", "telefono", "direccion", "correo")
+        for valor in guardados:
+            self.assertTrue(valor.startswith(cifrado.PREFIJO_FERNET), valor)
+        self.assertNotIn("01234567", guardados[0])
+        # Desde Django se lee en texto normal
+        paciente = Paciente.objects.get(pk=paciente.pk)
+        self.assertEqual(paciente.numero_documento, DUI_1)
+        self.assertEqual(paciente.telefono, "2222-3333")
+        self.assertEqual(paciente.correo, "maria@example.com")
+
+    def test_mismo_dato_se_cifra_distinto_cada_vez(self):
+        primero, segundo = cifrado.cifrar("7123-4567"), cifrado.cifrar("7123-4567")
+        self.assertNotEqual(primero, segundo)
+        self.assertEqual(cifrado.descifrar(primero), cifrado.descifrar(segundo))
+
+    def test_historial_clinico_cifrado(self):
+        historial = crear_paciente().historial
+        historial.tipo_sangre = "O+"
+        historial.alergias = "Penicilina"
+        historial.save()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT tipo_sangre, alergias FROM pacientes_historialclinico WHERE id = %s", [historial.pk]
+            )
+            for valor in cursor.fetchone():
+                self.assertTrue(valor.startswith(cifrado.PREFIJO_FERNET), valor)
+        historial.refresh_from_db()
+        self.assertEqual((historial.tipo_sangre, historial.alergias), ("O+", "Penicilina"))
+
+    def test_el_documento_no_queda_en_el_texto_de_busqueda(self):
+        paciente = crear_paciente(numero_documento=DUI_1)
+        self.assertNotIn("01234567", paciente.texto_busqueda)
+        self.assertEqual(paciente.documento_huella, Paciente.calcular_huella_documento("DUI", "012345678"))
+
+    def test_dato_viejo_en_claro_se_lee_y_se_recifra(self):
+        paciente = crear_paciente()
+        # Así quedan los datos que se guardaron antes de activar el cifrado
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE pacientes_paciente SET telefono = %s WHERE id = %s", ["7000-1111", paciente.pk])
+        self.assertEqual(Paciente.objects.get(pk=paciente.pk).telefono, "7000-1111")
+        call_command("recifrar_datos", stdout=StringIO())
+        (telefono,) = valores_en_la_base(paciente, "telefono")
+        self.assertTrue(telefono.startswith(cifrado.PREFIJO_FERNET))
+        self.assertEqual(Paciente.objects.get(pk=paciente.pk).telefono, "7000-1111")
+
+    def test_cambio_de_clave(self):
+        paciente = crear_paciente(numero_documento=DUI_1)
+        with override_settings(CLAVE_CIFRADO=f"{CLAVE_2},{CLAVE_1}"):
+            # Con la clave nueva primero, lo viejo se sigue leyendo...
+            self.assertEqual(Paciente.objects.get(pk=paciente.pk).numero_documento, DUI_1)
+            call_command("recifrar_datos", stdout=StringIO())
+            # ...y después de recifrar, basta la clave nueva
+            with override_settings(CLAVE_CIFRADO=CLAVE_2, CIFRADO_PERMITIR_CLAVE_DESARROLLO=False):
+                paciente = Paciente.objects.get(pk=paciente.pk)
+                self.assertEqual(paciente.numero_documento, DUI_1)
+                self.assertEqual(
+                    Paciente.objects.filter(documento_huella__in=Paciente.huellas_para_buscar(DUI_1)).count(), 1
+                )
+
+    def test_clave_equivocada_avisa(self):
+        paciente = crear_paciente()
+        with override_settings(CLAVE_CIFRADO=CLAVE_2, CIFRADO_PERMITIR_CLAVE_DESARROLLO=False):
+            with self.assertRaises(cifrado.ErrorDeCifrado):
+                Paciente.objects.get(pk=paciente.pk)
+
+    @override_settings(CLAVE_CIFRADO="", CIFRADO_PERMITIR_CLAVE_DESARROLLO=False)
+    def test_sin_clave_en_produccion_no_arranca(self):
+        with self.assertRaises(ImproperlyConfigured):
+            cifrado.cifrar("7123-4567")
+
+    def test_generar_clave_y_guardarla_en_el_env(self):
+        with tempfile.TemporaryDirectory() as carpeta, override_settings(BASE_DIR=Path(carpeta)):
+            env = Path(carpeta) / ".env"
+            env.write_text("DB_NAME=clinica_familiar\nCLAVE_CIFRADO=\n", encoding="utf-8")
+            call_command("generar_clave_cifrado", "--guardar", stdout=StringIO())
+            contenido = env.read_text(encoding="utf-8")
+            self.assertIn("DB_NAME=clinica_familiar", contenido)
+            claves = re.findall(r"^CLAVE_CIFRADO=(.+)$", contenido, re.M)
+            self.assertEqual(len(claves), 1)
+            Fernet(claves[0].encode())  # es una clave válida
+            # Si el .env ya tiene clave no se cambia, para no perder los datos cifrados
+            with self.assertRaises(CommandError):
+                call_command("generar_clave_cifrado", "--guardar", stdout=StringIO())

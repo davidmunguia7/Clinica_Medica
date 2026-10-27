@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load citas_extras %}
+
+{% block title %}Agenda de citas · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-3xl font-extrabold text-marino">Agenda de citas</h1>
+        <p class="mt-1 text-slate-600">{{ fecha|date:"l j \d\e F \d\e Y"|capfirst }}{% if fecha == hoy %} · Hoy{% endif %}</p>
+    </div>
+    {% if perms.citas.add_cita %}
+    <a href="{% url 'citas:nueva' %}?fecha={{ fecha|date:'Y-m-d' }}" class="btn btn-acento">+ Nueva cita</a>
+    {% endif %}
+</div>
+
+<div class="tarjeta mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+            <a href="?fecha={{ anterior|date:'Y-m-d' }}{% if medico_id %}&amp;medico={{ medico_id }}{% endif %}" class="btn btn-secundario btn-chico" aria-label="Día anterior">←</a>
+            <a href="?fecha={{ hoy|date:'Y-m-d' }}{% if medico_id %}&amp;medico={{ medico_id }}{% endif %}" class="btn btn-secundario btn-chico">Hoy</a>
+            <a href="?fecha={{ siguiente|date:'Y-m-d' }}{% if medico_id %}&amp;medico={{ medico_id }}{% endif %}" class="btn btn-secundario btn-chico" aria-label="Día siguiente">→</a>
+        </div>
+        <form method="get" class="flex flex-wrap items-center gap-2">
+            <label for="ir-fecha" class="sr-only">Ir a la fecha</label>
+            <input id="ir-fecha" type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" class="campo w-auto py-1.5">
+            {% if medicos %}
+            <label for="filtro-medico" class="sr-only">Médico</label>
+            <select id="filtro-medico" name="medico" class="campo w-auto py-1.5">
+                <option value="">Todos los médicos</option>
+                {% for medico in medicos %}
+                <option value="{{ medico.pk }}" {% if medico_id == medico.pk|stringformat:'s' %}selected{% endif %}>{{ medico.get_full_name|default:medico.username }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <button type="submit" class="btn btn-principal btn-chico">Ver</button>
+        </form>
+    </div>
+    <nav class="mt-4 grid grid-cols-7 gap-1 sm:gap-2" aria-label="Días de la semana">
+        {% for d in semana %}
+        <a href="?fecha={{ d.dia|date:'Y-m-d' }}{% if medico_id %}&amp;medico={{ medico_id }}{% endif %}"
+           {% if d.dia == fecha %}aria-current="date"{% endif %}
+           class="rounded-xl border px-1 py-2 text-center {% if d.dia == fecha %}border-marino bg-marino text-white{% else %}border-slate-200 bg-white text-gris-oscuro hover:bg-marino-claro{% endif %}">
+            <span class="block text-xs font-semibold uppercase">{{ d.dia|date:"D" }}</span>
+            <span class="block text-lg font-bold">{{ d.dia|date:"j" }}</span>
+            <span class="block text-xs {% if d.dia == fecha %}text-marino-claro{% else %}text-slate-500{% endif %}">{{ d.citas }}<span class="hidden sm:inline"> cita{{ d.citas|pluralize }}</span></span>
+        </a>
+        {% endfor %}
+    </nav>
+</div>
+
+{% if citas %}
+<ol class="space-y-3">
+    {% for cita in citas %}
+    <li>
+        {# En el celular el estado pasa a una segunda línea para que se lea el nombre completo #}
+        <a href="{{ cita.get_absolute_url }}" class="tarjeta flex flex-wrap items-center gap-x-4 gap-y-2 p-4 hover:border-verde-teal">
+            <div class="w-28 shrink-0">
+                <p class="whitespace-nowrap text-xl font-extrabold text-marino">{{ cita.fecha_hora|hora12 }}</p>
+                <p class="text-xs text-slate-500">{{ cita.duracion_minutos }} min</p>
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-marino">{{ cita.paciente.nombre_completo }}</p>
+                <p class="truncate text-sm text-slate-600">{{ cita.motivo }}{% if cita.medico %} · {{ cita.nombre_medico }}{% endif %}</p>
+            </div>
+            <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+                {% include "citas/_estado.html" with cita=cita %}
+                {% if cita.recordatorio_enviado %}<span class="insignia bg-verde-teal-claro text-xs text-verde-teal-oscuro">Recordatorio enviado</span>{% endif %}
+            </div>
+        </a>
+    </li>
+    {% endfor %}
+</ol>
+{% else %}
+<div class="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+    <p class="text-lg font-semibold text-marino">No hay citas este día.</p>
+    {% if perms.citas.add_cita %}
+    <a href="{% url 'citas:nueva' %}?fecha={{ fecha|date:'Y-m-d' }}" class="btn btn-acento mt-5">Agendar una cita</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -56,7 +56,7 @@ class ConDatos(TestCase):
         valores.update(campos)
         return Cita.objects.create(**valores)
 
-
+@override_settings(CLAVE_CIFRADO=CLAVE_1)
 class CitaModeloTests(ConDatos):
     def nueva(self, cuando, **campos):
         return Cita(paciente=self.paciente, medico=campos.pop("medico", self.medica),

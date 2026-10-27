@@ -1,0 +1,101 @@
+# Pruebas automáticas: corren en cada Pull Request hacia main y en cada cambio que entra a main.
+# Si algo falla, GitHub marca el PR con una ❌ y muestra en qué paso falló.
+name: Pruebas
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Si se suben cambios nuevos a un PR, se cancela la revisión anterior y se corre la nueva.
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Django + SQL Server
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    # SQL Server de prueba en un contenedor. Vive solo mientras corren las pruebas,
+    # por eso la contraseña puede ir aquí: no protege ningún dato real.
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Prueba_CI_2026!"
+        ports:
+          - 1433:1433
+
+    env:
+      DB_NAME: clinica_familiar
+      DB_HOST: localhost
+      DB_USER: sa
+      DB_PASSWORD: "Prueba_CI_2026!"
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Instalar el driver ODBC 17 de SQL Server
+        run: |
+          if ! odbcinst -q -d -n "ODBC Driver 17 for SQL Server" > /dev/null 2>&1; then
+            curl -sSL -o /tmp/packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+            sudo dpkg -i /tmp/packages-microsoft-prod.deb
+            sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql17
+          fi
+          odbcinst -q -d
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Esperar a SQL Server y crear la base
+        run: |
+          python - <<'EOF'
+          import os, time
+          import pyodbc
+
+          conexion = (
+              "DRIVER={ODBC Driver 17 for SQL Server};SERVER=localhost,1433;"
+              f"UID={os.environ['DB_USER']};PWD={os.environ['DB_PASSWORD']}"
+          )
+          for intento in range(30):
+              try:
+                  cn = pyodbc.connect(conexion, timeout=5, autocommit=True)
+                  break
+              except pyodbc.Error:
+                  time.sleep(3)
+          else:
+              raise SystemExit("SQL Server no respondió a tiempo.")
+          nombre = os.environ["DB_NAME"]
+          cn.execute(f"IF DB_ID('{nombre}') IS NULL CREATE DATABASE [{nombre}]")
+          print("SQL Server listo; base", nombre, "creada.")
+          EOF
+
+      - name: Revisar la configuración de Django
+        run: python manage.py check
+
+      - name: Revisar que no falten migraciones
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Correr las pruebas
+        run: python manage.py test --noinput
+
+      - name: Revisar que el CSS compilado esté actualizado
+        run: |
+          python manage.py tailwind build
+          if ! git diff --quiet -- theme/static/css/dist/styles.css; then
+            echo "::error file=theme/static/css/dist/styles.css::El CSS compilado no está actualizado. Corran 'python manage.py tailwind build' y suban theme/static/css/dist/styles.css."
+            exit 1
+          fi
+          echo "El CSS compilado está al día."

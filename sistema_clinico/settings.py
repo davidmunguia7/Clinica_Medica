@@ -98,9 +98,13 @@ DATABASES = {
         'ENGINE': 'mssql',
         'NAME': os.getenv('DB_NAME', 'clinica_familiar'),
         'HOST': os.getenv('DB_HOST', r'localhost\SQLEXPRESS'),  # se define en .env
+        # Sin DB_USER se entra con la cuenta de Windows (lo normal en el equipo).
+        # Con DB_USER y DB_PASSWORD se usa un usuario de SQL Server (lo usan las pruebas en GitHub).
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
-            'extra_params': 'Trusted_Connection=yes;',
+            'extra_params': '' if os.getenv('DB_USER') else 'Trusted_Connection=yes;',
         },
     }
 }

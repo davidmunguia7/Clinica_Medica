@@ -95,6 +95,26 @@ jobs:
         run: |
           python manage.py tailwind build
           if ! git diff --quiet -- theme/static/css/dist/styles.css; then
+            # Muestra qué clases faltan o sobran para saber qué plantilla cambió
+            git show HEAD:theme/static/css/dist/styles.css > /tmp/css_subido.css
+            python - <<'EOF'
+          import re
+
+          def clases(texto):
+              return {c.replace("\\", "") for c in re.findall(r"\.((?:[\w-]|\\.)+)", texto)}
+
+          subido = open("/tmp/css_subido.css", encoding="utf-8").read()
+          nuevo = open("theme/static/css/dist/styles.css", encoding="utf-8").read()
+          print("Clases que faltan en el CSS subido:", sorted(clases(nuevo) - clases(subido)) or "ninguna")
+          print("Clases que sobran en el CSS subido:", sorted(clases(subido) - clases(nuevo)) or "ninguna")
+          print("Tamaño subido / recompilado:", len(subido), len(nuevo))
+          for i, (a, b) in enumerate(zip(subido, nuevo)):
+              if a != b:
+                  print("Primera diferencia en la posición", i)
+                  print("  subido:     ", subido[max(0, i - 100):i + 100])
+                  print("  recompilado:", nuevo[max(0, i - 100):i + 100])
+                  break
+          EOF
             echo "::error file=theme/static/css/dist/styles.css::El CSS compilado no está actualizado. Corran 'python manage.py tailwind build' y suban theme/static/css/dist/styles.css."
             exit 1
           fi

@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import HistorialClinicoForm, PacienteForm
@@ -15,9 +16,11 @@ PACIENTES_POR_PAGINA = 20
 
 
 def _buscar(consulta, incluir_inactivos=False):
-    """Busca por nombre, apellidos, 'conocido por', documento o número de expediente.
+    """Busca por nombre, apellidos, 'conocido por', número de expediente o documento.
 
     No distingue tildes ni mayúsculas: 'maria pena' encuentra a 'María Peña'.
+    El documento está cifrado, así que se busca por su huella: hay que escribirlo
+    completo (el DUI con o sin guion).
     """
     pacientes = Paciente.objects.select_related(
         "historial", "distrito__municipio__departamento"
@@ -32,9 +35,8 @@ def _buscar(consulta, incluir_inactivos=False):
     for palabra in normalizar_busqueda(consulta).split():
         por_texto &= Q(texto_busqueda__contains=palabra)
     filtro = por_texto | Q(historial__numero_expediente__icontains=consulta)
-    digitos = re.sub(r"\D", "", consulta)
-    if len(digitos) >= 4:
-        filtro |= Q(documento_clave__contains=digitos)
+    if len(re.sub(r"[^0-9A-Za-z]", "", consulta)) >= 4:
+        filtro |= Q(documento_huella__in=Paciente.huellas_para_buscar(consulta))
     return pacientes.filter(filtro)
 
 
@@ -101,11 +103,17 @@ def detalle(request, pk):
         pk=pk,
     )
     historial = paciente.obtener_historial()
-    return render(
-        request,
-        "pacientes/detalle.html",
-        {"paciente": paciente, "historial": historial},
-    )
+    contexto = {"paciente": paciente, "historial": historial}
+    if request.user.has_perm("citas.view_cita"):
+        from citas.models import Cita
+
+        ahora = timezone.now()
+        citas = paciente.citas.select_related("medico")
+        contexto["citas_proximas"] = citas.filter(
+            estado__in=Cita.ACTIVAS, fecha_hora__gte=ahora
+        ).order_by("fecha_hora")[:5]
+        contexto["citas_anteriores"] = citas.filter(fecha_hora__lt=ahora).order_by("-fecha_hora")[:5]
+    return render(request, "pacientes/detalle.html", contexto)
 
 
 @login_required

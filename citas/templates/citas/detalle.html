@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load citas_extras %}
+
+{% block title %}Cita de {{ cita.paciente.nombre_completo }} · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'citas:agenda' %}?fecha={{ cita.fecha_hora|date:'Y-m-d' }}" class="enlace text-sm">← Agenda del {{ cita.fecha_hora|date:"j \d\e F" }}</a>
+</div>
+
+<div class="tarjeta overflow-hidden p-0">
+    <div class="h-2 bg-verde-teal" aria-hidden="true"></div>
+    <div class="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
+        <div>
+            <p class="text-sm font-bold uppercase tracking-wide text-verde-teal-oscuro">{{ cita.fecha_hora|date:"l j \d\e F \d\e Y"|capfirst }}</p>
+            <h1 class="text-3xl font-extrabold text-marino">{{ cita.fecha_hora|hora12 }} · {{ cita.paciente.nombre_completo }}</h1>
+            <div class="mt-3 flex flex-wrap gap-2">
+                {% include "citas/_estado.html" with cita=cita %}
+                <span class="insignia bg-marino-claro text-marino">{{ cita.get_duracion_minutos_display }}</span>
+                <span class="insignia bg-marino-claro text-marino">{% if cita.medico %}{{ cita.nombre_medico }}{% else %}Médico sin asignar{% endif %}</span>
+                {% if cita.recordatorio_enviado %}<span class="insignia bg-verde-teal-claro text-verde-teal-oscuro">Recordatorio enviado</span>{% endif %}
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if cita.activa and perms.citas.change_cita %}
+            <a href="{% url 'citas:editar' cita.pk %}" class="btn btn-principal">Cambiar fecha o datos</a>
+            {% endif %}
+            {% if perms.pacientes.view_paciente %}
+            <a href="{{ cita.paciente.get_absolute_url }}" class="btn btn-secundario">Ver paciente</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <section class="tarjeta min-w-0 lg:col-span-2">
+        <h2 class="titulo-seccion">Detalle de la cita</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Motivo" valor=cita.motivo %}
+            {% include "pacientes/_dato.html" with etiqueta="Expediente" valor=cita.paciente.numero_expediente %}
+            {% include "pacientes/_dato.html" with etiqueta="Notas internas" valor=cita.notas %}
+            {% if cita.creada_por %}
+            {% include "pacientes/_dato.html" with etiqueta="Agendada por" valor=cita.creada_por.get_full_name|default:cita.creada_por.username %}
+            {% endif %}
+            {% include "pacientes/_dato.html" with etiqueta="Agendada el" valor=cita.creada|date:"d/m/Y H:i" %}
+        </dl>
+    </section>
+
+    {% if cita.activa and perms.citas.change_cita %}
+    <section class="tarjeta min-w-0">
+        <h2 class="titulo-seccion">¿Qué pasó con la cita?</h2>
+        <div class="mt-4 space-y-3">
+            {% if cita.estado == 'PROGRAMADA' %}
+            <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}">{% csrf_token %}
+                <button type="submit" name="estado" value="CONFIRMADA" class="btn btn-secundario w-full">El paciente confirmó</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}">{% csrf_token %}
+                <button type="submit" name="estado" value="ATENDIDA" class="btn btn-principal w-full">Marcar como atendida</button>
+            </form>
+            <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}">{% csrf_token %}
+                <button type="submit" name="estado" value="NO_ASISTIO" class="btn btn-secundario w-full">No asistió</button>
+            </form>
+            <form method="post" action="{% url 'citas:cambiar_estado' cita.pk %}" onsubmit="return confirm('¿Cancelar esta cita?');">{% csrf_token %}
+                <button type="submit" name="estado" value="CANCELADA" class="btn btn-peligro w-full">Cancelar cita</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<section class="tarjeta mt-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="titulo-seccion">Recordatorios por mensaje de texto</h2>
+        {% if cita.activa and perms.citas.change_cita %}
+        <form method="post" action="{% url 'citas:recordar' cita.pk %}">{% csrf_token %}
+            <button type="submit" class="btn btn-acento btn-chico">Enviar recordatorio ahora</button>
+        </form>
+        {% endif %}
+    </div>
+    {% if mensajes_sms %}
+    <ul class="mt-3 divide-y divide-slate-100">
+        {% for mensaje in mensajes_sms %}
+        <li class="py-3">
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+                <span class="insignia text-xs {% if mensaje.estado == 'ENVIADO' %}bg-verde-teal-claro text-verde-teal-oscuro{% elif mensaje.estado == 'ERROR' %}bg-red-50 text-red-700{% else %}bg-marino-claro text-marino{% endif %}">{{ mensaje.get_estado_display }}</span>
+                <span class="text-slate-600">{{ mensaje.creado|date:"d/m/Y H:i" }} · {{ mensaje.telefono|default:"sin teléfono" }}{% if mensaje.enviado_por %} · enviado por {{ mensaje.enviado_por.get_full_name|default:mensaje.enviado_por.username }}{% else %} · automático{% endif %}</span>
+            </div>
+            <p class="mt-1 text-sm text-gris-oscuro">{{ mensaje.texto }}</p>
+            {% if mensaje.error %}<p class="mt-1 text-sm font-medium text-red-700">{{ mensaje.error }}</p>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-2 text-sm text-slate-600">Todavía no se ha enviado ningún recordatorio. El automático sale un día antes de la cita.</p>
+    {% endif %}
+</section>
+{% endblock %}

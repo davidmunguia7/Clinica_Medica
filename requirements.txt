@@ -3,3 +3,4 @@ mssql-django>=1.8
 pyodbc>=5.1
 django-tailwind[reload]>=3.8
 python-dotenv>=1.0
+cryptography>=43

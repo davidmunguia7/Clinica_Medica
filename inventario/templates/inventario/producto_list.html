@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load inventario_extras %}
 {% block title %}Inventario · Clínica Familiar{% endblock %}
 {% block content %}
 <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -7,11 +8,12 @@
         <p class="mt-1 text-slate-600">Medicamentos e insumos de la clínica.</p>
     </div>
     <div class="flex flex-wrap gap-2">
+        <a href="{% url 'inventario:panel' %}" class="btn btn-principal">Panel por categorías</a>
         {% if perms.inventario.view_movimiento %}
         <a href="{% url 'inventario:movimiento_lista' %}" class="btn btn-secundario">Ver movimientos</a>
         {% endif %}
         {% if perms.inventario.add_producto %}
-        <a href="{% url 'inventario:producto_crear' %}" class="btn btn-acento">+ Agregar producto</a>
+        <a href="{% url 'inventario:producto_crear' %}{% if categoria.isdigit %}?categoria={{ categoria }}{% endif %}" class="btn btn-acento">+ Agregar producto</a>
         {% endif %}
     </div>
 </div>
@@ -41,13 +43,20 @@
     <label for="q" class="etiqueta">Buscar por nombre o código</label>
     <div class="flex flex-col gap-2 sm:flex-row">
         <input id="q" type="search" name="q" value="{{ q }}" autocomplete="off" placeholder="Ej.: Acetaminofén o MED-001" class="campo">
+        <select name="categoria" aria-label="Categoría" class="campo sm:w-64">
+            <option value="">Todas las categorías</option>
+            {% for c in categorias %}
+            <option value="{{ c.pk }}" {% if categoria == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+            <option value="sin" {% if categoria == 'sin' %}selected{% endif %}>Sin categoría</option>
+        </select>
         <select name="filtro" aria-label="Mostrar" class="campo sm:w-64">
             <option value="">Activos</option>
             <option value="bajo" {% if filtro == 'bajo' %}selected{% endif %}>Bajo el mínimo</option>
             <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos (incluye inactivos)</option>
         </select>
         <button type="submit" class="btn btn-principal">Buscar</button>
-        {% if q or filtro %}<a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario">Limpiar</a>{% endif %}
+        {% if q or filtro or categoria %}<a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario">Limpiar</a>{% endif %}
     </div>
 </form>
 
@@ -57,7 +66,9 @@
             <tr>
                 <th scope="col" class="px-4 py-3">Producto</th>
                 <th scope="col" class="hidden px-4 py-3 sm:table-cell">Código</th>
-                <th scope="col" class="hidden px-4 py-3 md:table-cell">Tipo</th>
+                <th scope="col" class="hidden px-4 py-3 lg:table-cell">Tipo</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">Categoría</th>
+                <th scope="col" class="hidden px-4 py-3 text-right md:table-cell">Precio</th>
                 <th scope="col" class="px-4 py-3 text-right">Existencia</th>
                 <th scope="col" class="hidden px-4 py-3 text-right sm:table-cell">Mínimo</th>
             </tr>
@@ -71,15 +82,17 @@
                     {% if not p.activo %}<span class="insignia ml-2 bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Inactivo</span>{% endif %}
                 </td>
                 <td class="hidden whitespace-nowrap px-4 py-3 font-mono text-gris-oscuro sm:table-cell">{{ p.codigo }}</td>
-                <td class="hidden px-4 py-3 text-slate-600 md:table-cell">{{ p.get_tipo_display }}</td>
+                <td class="hidden px-4 py-3 text-slate-600 lg:table-cell">{{ p.get_tipo_display }}</td>
+                <td class="hidden px-4 py-3 text-slate-600 md:table-cell">{{ p.categoria.nombre|default:"—" }}</td>
+                <td class="hidden whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-600 md:table-cell">{% if p.precio_venta %}{{ p.precio_venta|dinero }}{% else %}—{% endif %}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums {% if p.bajo_minimo %}font-bold text-red-700{% endif %}">
                     {{ p.stock_actual }} <span class="font-normal text-slate-500">{{ p.unidad_medida }}</span>
                 </td>
                 <td class="hidden px-4 py-3 text-right tabular-nums text-slate-500 sm:table-cell">{{ p.stock_minimo }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="px-4 py-10 text-center">
-                <p class="text-lg font-semibold text-marino">{% if q or filtro %}No hay productos que coincidan.{% else %}Todavía no hay productos.{% endif %}</p>
+            <tr><td colspan="7" class="px-4 py-10 text-center">
+                <p class="text-lg font-semibold text-marino">{% if q or filtro or categoria %}No hay productos que coincidan.{% else %}Todavía no hay productos.{% endif %}</p>
                 {% if perms.inventario.add_producto %}<a href="{% url 'inventario:producto_crear' %}" class="btn btn-acento mt-4">Agregar producto</a>{% endif %}
             </td></tr>
             {% endfor %}

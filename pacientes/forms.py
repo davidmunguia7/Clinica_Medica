@@ -251,13 +251,14 @@ class PacienteForm(EstilosTailwindMixin, forms.ModelForm):
             self.add_error(campo_distrito, "Este distrito no pertenece al municipio seleccionado.")
 
     def _validar_documento_repetido(self, datos):
-        clave = Paciente.calcular_clave_documento(
+        # El documento está cifrado: se compara su huella, que es igual para el mismo documento.
+        huella = Paciente.calcular_huella_documento(
             datos.get("tipo_documento"), datos.get("numero_documento")
         )
-        if not clave:
+        if not huella:
             return
         existente = (
-            Paciente.objects.filter(documento_clave=clave)
+            Paciente.objects.filter(documento_huella=huella)
             .exclude(pk=self.instance.pk)
             .select_related("historial")
             .first()

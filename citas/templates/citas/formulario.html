@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{% if cita %}Cambiar cita{% else %}Agendar cita{% endif %} · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+    {% if cita %}
+    <a href="{{ cita.get_absolute_url }}" class="enlace text-sm">← Volver a la cita</a>
+    <h1 class="mt-1 text-3xl font-extrabold text-marino">Cambiar fecha o datos de la cita</h1>
+    {% elif paciente %}
+    <a href="{{ paciente.get_absolute_url }}" class="enlace text-sm">← Volver a la ficha</a>
+    <h1 class="mt-1 text-3xl font-extrabold text-marino">Agendar cita</h1>
+    {% else %}
+    <a href="{% url 'citas:agenda' %}" class="enlace text-sm">← Volver a la agenda</a>
+    <h1 class="mt-1 text-3xl font-extrabold text-marino">Agendar cita</h1>
+    {% endif %}
+    {% if paciente %}
+    <p class="mt-1 text-slate-600">{{ paciente.nombre_completo }}{% if paciente.numero_expediente %} · Expediente n.° {{ paciente.numero_expediente }}{% endif %}</p>
+    {% endif %}
+
+    {% if form.errors %}
+    <div role="alert" class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <p class="font-semibold">No se pudo guardar. Revise los datos marcados en rojo.</p>
+        {% for error in form.non_field_errors %}<p class="mt-1">{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate class="tarjeta mt-6 space-y-5">
+        {% csrf_token %}
+        {% include "pacientes/_campo.html" with campo=form.paciente sin_paso=True %}
+        {% include "pacientes/_campo.html" with campo=form.medico sin_paso=True %}
+
+        {# Fecha y hora en dos controles lado a lado: el calendario del navegador y la hora #}
+        <fieldset>
+            <legend class="etiqueta">{{ form.fecha_hora.label }} <span class="font-bold text-coral-oscuro" aria-hidden="true">*</span></legend>
+            <div class="grid gap-3 sm:grid-cols-2">{{ form.fecha_hora }}</div>
+            <p class="mt-1 text-xs text-slate-500">Primero la fecha y después la hora (de 15 en 15 minutos).</p>
+            {% for error in form.fecha_hora.errors %}<p class="mt-1 text-sm font-medium text-red-700">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        {% include "pacientes/_campo.html" with campo=form.duracion_minutos sin_paso=True %}
+        {% include "pacientes/_campo.html" with campo=form.motivo sin_paso=True %}
+        {% include "pacientes/_campo.html" with campo=form.notas sin_paso=True %}
+
+        <p class="text-sm text-slate-600">Un día antes de la cita se le manda al paciente un mensaje de texto para recordársela.</p>
+
+        <div class="flex flex-wrap justify-end gap-3 pt-2">
+            <a href="{% if cita %}{{ cita.get_absolute_url }}{% elif paciente %}{{ paciente.get_absolute_url }}{% else %}{% url 'citas:agenda' %}{% endif %}" class="btn btn-secundario">Cancelar</a>
+            <button type="submit" class="btn btn-acento">{% if cita %}Guardar cambios{% else %}Agendar cita{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

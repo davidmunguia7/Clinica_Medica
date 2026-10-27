@@ -41,6 +41,30 @@ class InicioYSesionTests(TestCase):
         self.assertContains(respuesta, reverse("inventario:producto_lista"))
         self.assertContains(respuesta, "Inventario de medicamentos")
 
+    def test_menu_con_citas_y_reportes(self):
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse("inicio"))
+        for url in (reverse("citas:agenda"), reverse("reportes:mensual"), reverse("inventario:panel")):
+            self.assertContains(respuesta, url)
+        self.assertContains(respuesta, "Citas de hoy")
+        self.assertNotContains(respuesta, "Agenda de citas")  # ya no sale como «Próximamente»
+
+    def test_inicio_muestra_las_citas_de_hoy(self):
+        from datetime import datetime, time
+
+        from django.utils import timezone
+
+        from citas.models import Cita
+        from pacientes.tests import crear_paciente
+
+        paciente = crear_paciente()
+        mediodia = timezone.make_aware(datetime.combine(timezone.localdate(), time(12, 0)))
+        Cita.objects.create(paciente=paciente, fecha_hora=mediodia, motivo="Control")
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertEqual(len(respuesta.context["citas_hoy"]), 1)
+        self.assertContains(respuesta, paciente.nombre_completo)
+
     def test_inicio_sin_permisos_no_muestra_pacientes(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")
         self.client.force_login(usuario)

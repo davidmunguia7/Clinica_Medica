@@ -1,0 +1,2 @@
+{# Insignia del estado de una cita. Uso: {% include "citas/_estado.html" with cita=cita %} #}
+<span class="insignia shrink-0 {% if cita.estado == 'PROGRAMADA' %}bg-marino-claro text-marino{% elif cita.estado == 'CONFIRMADA' %}bg-verde-teal-claro text-verde-teal-oscuro{% elif cita.estado == 'ATENDIDA' %}bg-slate-100 text-slate-700{% elif cita.estado == 'CANCELADA' %}bg-red-50 text-red-700{% else %}bg-coral-claro text-gris-oscuro{% endif %}">{{ cita.get_estado_display }}</span>

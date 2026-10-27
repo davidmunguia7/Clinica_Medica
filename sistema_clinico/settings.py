@@ -147,6 +147,9 @@ STATIC_URL = 'static/'
 
 # Tailwind CSS
 TAILWIND_APP_NAME = 'theme'
+# Versión fija de Tailwind: así todos (y las pruebas de GitHub) generan exactamente el mismo CSS,
+# aunque tengan instaladas versiones distintas de django-tailwind.
+TAILWIND_STANDALONE_BINARY_VERSION = 'v4.3.0'
 INTERNAL_IPS = ['127.0.0.1']
 
 # Inicio de sesión con la pantalla propia de la clínica.

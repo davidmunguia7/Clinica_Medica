@@ -9,7 +9,7 @@ en un solo lugar. Proyecto de equipo de Programación II.
 
 | Módulo | Carpeta | Qué hace | Responsable |
 |---|---|---|---|
-| Usuarios y roles | `usuarios/` | Usuario con rol (Administrador, Médico, Recepción) | Adriana |
+| Usuarios y roles | `usuarios/` | Usuario con rol (Administrador, Médico, Recepción), permisos por rol, «Usuarios y roles» y «Mi perfil» | Adriana |
 | Pacientes | `pacientes/` | Registro según la norma del MINSAL, expediente único, historial clínico | Fer |
 | Inventario | `inventario/` | Productos, lotes con vencimiento, entradas y salidas, panel por categorías | David |
 | Citas | `citas/` | Agenda por día y semana, estados de la cita, recordatorios por SMS | Por asignar |
@@ -93,8 +93,29 @@ El orden importa: **primero la clave de cifrado, después `migrate`**.
 
 Abre **http://127.0.0.1:8000/** y entra con tu usuario. Para apagarlo: `Ctrl + C` en la terminal.
 
-- Panel de administración (crear usuarios y asignar permisos): http://127.0.0.1:8000/admin/
+- Usuarios y roles (solo Administrador): http://127.0.0.1:8000/cuentas/usuarios/
+- Panel de administración (crear usuarios y asignarles su rol): http://127.0.0.1:8000/admin/
 - Panel de inventario por categorías: http://127.0.0.1:8000/inventario/panel/
+
+## Roles
+
+Cada usuario tiene **un rol**, y el rol decide qué pantallas ve y qué puede hacer. Al entrar, cada
+rol llega a **su propia pantalla de inicio**:
+
+| Rol | Qué hace | Su pantalla de inicio |
+|---|---|---|
+| **Administrador** | Todo lo de Recepción, más crear usuarios, asignar roles y entrar al panel de administración | Números del mes, el equipo con sus roles, citas de hoy y avisos del inventario |
+| **Médico** | Ve y actualiza expedientes, agenda y atiende citas. El inventario solo lo consulta; no registra pacientes nuevos | Solo **sus** citas, el siguiente paciente con sus **alergias** y sus próximos 7 días |
+| **Recepción** | Registra pacientes y maneja la agenda y el inventario | Citas de hoy de todos los médicos, pacientes recién registrados y avisos del inventario |
+
+- **Dónde se decide:** en `usuarios/roles.py` (`PERMISOS_POR_ROL`). Para darle o quitarle algo a
+  un rol se cambia ese archivo y nada más; no hay que correr comandos.
+- **Crear un usuario:** en el panel de administración → **Usuarios** → **Añadir**, y se elige su rol.
+  Para que alguien deje de entrar, se le quita «Activo» (no se borra).
+- **`createsuperuser`** crea usuarios con rol Administrador.
+- La tabla completa de qué puede hacer cada rol está en la pantalla **Usuarios y roles**.
+- **Pruebas:** si una prueba necesita un usuario *sin* los permisos de su rol, se marca con
+  `@sin_permisos_de_rol()` (de `usuarios/pruebas.py`).
 
 > Usamos `.\venv\Scripts\python.exe` para no tener que activar el entorno virtual. Si prefieres
 > activarlo (`venv\Scripts\activate`), la línea debe empezar con `(venv)` y después basta con

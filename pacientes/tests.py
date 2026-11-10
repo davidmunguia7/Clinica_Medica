@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from sistema_clinico import cifrado
+from usuarios.pruebas import sin_permisos_de_rol
 
 from .forms import PacienteForm
 from .models import (
@@ -333,6 +334,7 @@ class VistasTests(TestCase):
         self.assertEqual(respuesta.status_code, 302)
         self.assertIn(reverse("login"), respuesta["Location"])
 
+    @sin_permisos_de_rol()  # el usuario solo tiene los permisos que se le dan aquí
     def test_usuario_sin_permiso(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")
         self.client.force_login(usuario)

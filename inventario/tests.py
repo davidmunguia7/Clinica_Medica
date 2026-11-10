@@ -8,6 +8,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from usuarios.pruebas import sin_permisos_de_rol
+
 from . import services
 from .models import Categoria, Lote, Movimiento, Producto
 from .templatetags.inventario_extras import dinero
@@ -94,6 +96,7 @@ class VistasInventarioTests(TestCase):
             self.assertEqual(r.status_code, 302, url)
             self.assertIn(reverse("login"), r["Location"])
 
+    @sin_permisos_de_rol()  # el usuario solo tiene los permisos que se le dan aquí
     def test_usuario_sin_permiso(self):
         usuario = get_user_model().objects.create_user("visitante", password="clave-de-prueba-123")
         self.client.force_login(usuario)
@@ -263,6 +266,7 @@ class CategoriasYPanelTests(TestCase):
         self.assertContains(r, "$67.00")
         self.assertContains(r, "Antigripal tabletas")
 
+    @sin_permisos_de_rol()  # el usuario solo tiene los permisos que se le dan aquí
     def test_panel_requiere_permiso(self):
         usuario = get_user_model().objects.create_user("recepcion", password="clave-de-prueba-123")
         self.client.force_login(usuario)

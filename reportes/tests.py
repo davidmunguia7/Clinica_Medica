@@ -12,6 +12,7 @@ from inventario import services
 from inventario.models import Categoria, Movimiento, Producto
 from pacientes.models import Paciente
 from pacientes.tests import DUI_1, crear_paciente
+from usuarios.pruebas import sin_permisos_de_rol
 
 from . import calculos
 
@@ -114,6 +115,7 @@ class ReporteMensualTests(TestCase):
         self.assertIn("Ventas,4,24.00,0", contenido)
         self.assertIn("Vías respiratorias,4,24.00", contenido)
 
+    @sin_permisos_de_rol()  # el usuario solo tiene los permisos que se le dan aquí
     def test_cada_quien_ve_solo_lo_que_le_corresponde(self):
         medico = User.objects.create_user("medico", password="clave-de-prueba-123")
         medico.user_permissions.add(Permission.objects.get(codename="view_cita"))

@@ -51,8 +51,12 @@
                 {% endif %}{% endif %}
                 {# Solo para el rol Administrador (usuarios/roles.py) #}
                 {% if url_usuarios and perms.usuarios.view_usuario %}
-                <a href="{{ url_usuarios }}" {% if ns == 'usuarios' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Usuarios</a>
+                <a href="{{ url_usuarios }}" {% if ns == 'usuarios' and vista == 'lista' %}aria-current="page"{% endif %}
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' and vista == 'lista' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Usuarios</a>
+                {% endif %}
+                {% if user.rol == 'RECEPCION' %}
+                <a href="{% url 'usuarios:perfil' %}" {% if ns == 'usuarios' and vista == 'perfil' %}aria-current="page"{% endif %}
+                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' and vista == 'perfil' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Mi perfil</a>
                 {% endif %}
             </nav>
 

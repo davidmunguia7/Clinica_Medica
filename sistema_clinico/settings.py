@@ -170,6 +170,13 @@ MAILERS = {
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
+# Quién puede qué: primero lo normal de Django (usuario, contraseña y permisos sueltos)
+# y después los permisos del rol de cada usuario (usuarios/roles.py).
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'usuarios.backends.PermisosPorRol',
+]
+
 
 # Cifrado de los datos sensibles con Fernet (ver docs/seguridad.md).
 # La clave va en el .env y se genera con: python manage.py generar_clave_cifrado --guardar

@@ -1,0 +1,2 @@
+{# Insignia de un rol. Uso: {% include "usuarios/_rol.html" with rol=u.rol nombre=u.get_rol_display %} #}
+<span class="insignia shrink-0 px-2.5 py-0.5 text-xs {% if rol == 'ADMIN' %}bg-marino-claro text-marino{% elif rol == 'MEDICO' %}bg-verde-teal-claro text-verde-teal-oscuro{% else %}bg-coral-claro text-coral-oscuro{% endif %}">{{ nombre }}</span>

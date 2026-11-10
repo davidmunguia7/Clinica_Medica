@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios y roles · Clínica Familiar{% endblock %}
+
+{% block boton_registrar %}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-3xl font-extrabold text-marino">Usuarios y roles</h1>
+        <p class="mt-1 text-slate-600">Quién entra al sistema y qué puede hacer cada rol.</p>
+    </div>
+    {% if user.is_staff %}
+    <div class="flex flex-wrap gap-2">
+        <a href="{% url 'admin:index' %}" class="btn btn-secundario">Panel de administración</a>
+        {% if perms.usuarios.add_usuario %}
+        <a href="{% url 'admin:usuarios_usuario_add' %}" class="btn btn-acento">+ Nuevo usuario</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{# ---- Los roles ---- #}
+<div class="grid gap-4 sm:grid-cols-3">
+    {% for rol in roles %}
+    <section class="tarjeta">
+        <div class="flex items-center justify-between gap-2">
+            <h2 class="titulo-seccion">{{ rol.nombre }}</h2>
+            {% include "usuarios/_rol.html" with rol=rol.valor nombre=rol.activos|stringformat:"s"|add:" en el equipo" %}
+        </div>
+        <p class="mt-2 text-sm text-slate-600">{{ rol.descripcion }}</p>
+    </section>
+    {% endfor %}
+</div>
+
+{# ---- Los usuarios ---- #}
+<h2 class="titulo-seccion mt-8 mb-3">Usuarios</h2>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-marino-claro text-xs font-bold uppercase tracking-wide text-marino">
+            <tr>
+                <th scope="col" class="px-4 py-3">Usuario</th>
+                <th scope="col" class="px-4 py-3">Rol</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">Estado</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">Último ingreso</th>
+                <th scope="col" class="px-4 py-3"><span class="sr-only">Acciones</span></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for u in usuarios %}
+            <tr class="hover:bg-blanco-humo{% if not u.is_active %} text-slate-400{% endif %}">
+                <td class="px-4 py-3">
+                    <span class="flex items-center gap-3">
+                        <span class="avatar h-9 w-9 text-xs{% if not u.is_active %} opacity-50{% endif %}">{{ u.iniciales }}</span>
+                        <span class="min-w-0">
+                            <span class="block font-semibold {% if u.is_active %}text-marino{% else %}text-slate-400{% endif %}">{{ u.get_full_name|default:u.username }}</span>
+                            <span class="block text-xs text-slate-500">{{ u.username }}{% if u.pk == user.pk %} · usted{% endif %}</span>
+                        </span>
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    {% include "usuarios/_rol.html" with rol=u.rol nombre=u.get_rol_display %}
+                    {% if u.is_superuser %}<span class="mt-1 block text-xs text-slate-500">Superusuario</span>{% endif %}
+                </td>
+                <td class="hidden px-4 py-3 sm:table-cell">
+                    {% if u.is_active %}<span class="insignia bg-verde-teal-claro px-2.5 py-0.5 text-xs text-verde-teal-oscuro">Activo</span>
+                    {% else %}<span class="insignia bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">Desactivado</span>{% endif %}
+                </td>
+                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ u.last_login|date:"d/m/Y H:i"|default:"Todavía no ha entrado" }}</td>
+                <td class="px-4 py-3 text-right">
+                    {% if perms.usuarios.change_usuario and user.is_staff %}{% if not u.is_superuser or user.is_superuser %}
+                    <a href="{% url 'admin:usuarios_usuario_change' u.pk %}" class="enlace whitespace-nowrap">Editar</a>
+                    {% endif %}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="mt-2 text-sm text-slate-500">Para cambiarle el rol a alguien o desactivar su usuario, use «Editar».</p>
+
+{# ---- Qué puede hacer cada rol ---- #}
+<h2 class="titulo-seccion mt-8 mb-3">Qué puede hacer cada rol</h2>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full text-left text-sm">
+        <thead class="bg-marino-claro text-xs font-bold uppercase tracking-wide text-marino">
+            <tr>
+                <th scope="col" class="px-4 py-3">Puede…</th>
+                {% for rol in roles %}
+                <th scope="col" class="px-4 py-3 text-center">{{ rol.nombre }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        {% for grupo in matriz %}
+        <tbody class="divide-y divide-slate-100 border-t border-slate-200">
+            <tr class="bg-blanco-humo">
+                <th scope="colgroup" colspan="{{ roles|length|add:1 }}" class="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-500">{{ grupo.modulo }}</th>
+            </tr>
+            {% for fila in grupo.filas %}
+            <tr>
+                <th scope="row" class="px-4 py-3 font-normal text-gris-oscuro">{{ fila.texto }}</th>
+                {% for puede in fila.celdas %}
+                <td class="px-4 py-3 text-center">
+                    {% if puede %}<span class="text-base font-bold text-verde-teal-oscuro" aria-hidden="true">✓</span><span class="sr-only">Sí</span>
+                    {% else %}<span class="text-slate-300" aria-hidden="true">—</span><span class="sr-only">No</span>{% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% endfor %}
+    </table>
+</div>
+<p class="mt-2 text-sm text-slate-500">Nadie borra desde el sistema: los pacientes se dan de baja, las citas se cancelan y los usuarios se desactivan.</p>
+{% endblock %}

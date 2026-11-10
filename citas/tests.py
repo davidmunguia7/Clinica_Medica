@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from pacientes.tests import CLAVE_1, CLAVE_2, DUI_1, crear_paciente, hace_anios
+from usuarios.pruebas import sin_permisos_de_rol
 
 from .models import Cita, MensajeSMS
 from .recordatorios import (
@@ -289,6 +290,7 @@ class VistasCitasTests(ConDatos):
         self.assertContains(respuesta, "Fiebre")
         self.assertContains(respuesta, f'{reverse("citas:nueva")}?paciente={self.paciente.pk}')
 
+    @sin_permisos_de_rol()  # el usuario solo tiene los permisos que se le dan aquí
     def test_permisos(self):
         usuario = User.objects.create_user("visitante", password="clave-de-prueba-123")
         self.client.force_login(usuario)

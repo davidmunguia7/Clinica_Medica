@@ -1,0 +1,29 @@
+{% comment %}
+Lista de citas para la pantalla de inicio.
+Uso: {% include "inicio/_citas.html" with citas=citas_hoy %}
+Opcionales: con_motivo=True (muestra el motivo en vez del médico), con_fecha=True (muestra también el día)
+y vacio="texto cuando no hay citas".
+{% endcomment %}
+{% load citas_extras %}
+{% if citas %}
+<ul class="mt-3 divide-y divide-slate-100">
+    {% for cita in citas %}
+    <li>
+        <a href="{{ cita.get_absolute_url }}" class="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-blanco-humo">
+            <span class="w-24 shrink-0 font-bold text-marino">
+                {% if con_fecha %}<span class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ cita.fecha_hora|date:"D j M" }}</span>{% endif %}
+                <span class="block whitespace-nowrap">{{ cita.fecha_hora|hora12 }}</span>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block truncate font-semibold text-marino">{{ cita.paciente.nombre_completo }}</span>
+                <span class="block truncate text-sm text-slate-500">{% if con_motivo %}{{ cita.motivo }}{% elif cita.medico %}{{ cita.nombre_medico }}{% else %}Médico sin asignar{% endif %}</span>
+            </span>
+            {# En el celular no cabe el estado: se ve en la agenda #}
+            <span class="hidden sm:block">{% include "citas/_estado.html" with cita=cita %}</span>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">{{ vacio|default:"No hay citas para hoy." }}</p>
+{% endif %}

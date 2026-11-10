@@ -29,6 +29,7 @@ urlpatterns = [
     path('cuentas/entrar/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('cuentas/salir/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
+    path('usuarios/', include('usuarios.urls')),
     path('pacientes/', include('pacientes.urls')),
     path('inventario/', include('inventario.urls')),
     path('citas/', include('citas.urls')),

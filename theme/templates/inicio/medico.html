@@ -1,0 +1,104 @@
+{% extends "inicio.html" %}
+{# Inicio del Médico: solo sus citas, el siguiente paciente con sus alergias y los próximos días. #}
+{% load citas_extras %}
+
+{% block lema %}Su agenda de hoy y los expedientes de sus pacientes.{% endblock %}
+
+{% block tablero %}
+<div class="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 lg:grid-cols-4">
+    {% include "inicio/_dato.html" with numero=citas_hoy|length etiqueta="Mis citas de hoy" icono="citas" color="teal" url=mi_agenda %}
+    {% include "inicio/_dato.html" with numero=citas_hoy_pendientes etiqueta="Por atender" icono="reloj" color="coral" %}
+    {% include "inicio/_dato.html" with numero=citas_hoy_atendidas etiqueta="Atendidas hoy" icono="listo" color="marino" %}
+    {% include "inicio/_dato.html" with numero=total_proximas etiqueta="Citas en los próximos 7 días" icono="calendario" color="marino" %}
+</div>
+
+<div class="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-3">
+    <div class="min-w-0 space-y-6 lg:col-span-2">
+        <section class="tarjeta min-w-0">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="titulo-seccion">Mi agenda de hoy</h2>
+                <a href="{{ mi_agenda }}" class="enlace shrink-0 whitespace-nowrap text-sm">Ver mi agenda</a>
+            </div>
+            {% include "inicio/_citas.html" with citas=citas_hoy con_motivo=True vacio="No tiene citas para hoy." %}
+            {% if citas_sin_medico %}
+            <p class="mt-3 rounded-lg bg-marino-claro px-4 py-3 text-sm text-marino">
+                Hoy hay {{ citas_sin_medico }} cita{{ citas_sin_medico|pluralize }} sin médico asignado.
+                <a href="{% url 'citas:agenda' %}" class="font-semibold underline">Ver la agenda completa</a>
+            </p>
+            {% endif %}
+        </section>
+
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Mis próximas citas</h2>
+            {% include "inicio/_citas.html" with citas=proximas con_motivo=True con_fecha=True vacio="No tiene citas en los próximos 7 días." %}
+        </section>
+    </div>
+
+    <div class="min-w-0 space-y-6">
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Siguiente paciente</h2>
+            {% if siguiente %}
+            <div class="mt-3 flex items-center gap-3">
+                <span class="avatar h-12 w-12">{{ siguiente.paciente.iniciales }}</span>
+                <div class="min-w-0">
+                    <p class="truncate font-bold text-marino">{{ siguiente.paciente.nombre_completo }}</p>
+                    <p class="truncate text-sm text-slate-600">{{ siguiente.paciente.edad_texto }} · Expediente {{ siguiente.paciente.numero_expediente }}</p>
+                </div>
+            </div>
+            <dl class="mt-4 space-y-2 text-sm">
+                <div class="flex gap-2">
+                    <dt class="w-16 shrink-0 text-slate-500">Hora</dt>
+                    <dd class="font-semibold text-gris-oscuro">{{ siguiente.fecha_hora|hora12 }}</dd>
+                </div>
+                <div class="flex gap-2">
+                    <dt class="w-16 shrink-0 text-slate-500">Motivo</dt>
+                    <dd class="text-gris-oscuro">{{ siguiente.motivo }}</dd>
+                </div>
+            </dl>
+            {% if siguiente.paciente.historial.alergias %}
+            <div role="alert" class="mt-4 flex gap-3 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>
+                <div>
+                    <p class="font-bold">Alergias</p>
+                    <p class="whitespace-pre-line">{{ siguiente.paciente.historial.alergias }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p class="mt-4 rounded-lg bg-blanco-humo px-3 py-2 text-sm text-slate-600">No refiere alergias.</p>
+            {% endif %}
+            <div class="mt-4 space-y-3">
+                <a href="{{ siguiente.paciente.get_absolute_url }}" class="btn btn-acento w-full">Abrir expediente</a>
+                <a href="{{ siguiente.get_absolute_url }}" class="btn btn-secundario w-full">Ver la cita</a>
+            </div>
+            {% else %}
+            <p class="mt-3 text-sm text-slate-600">No tiene pacientes por atender hoy.</p>
+            {% endif %}
+        </section>
+
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Accesos rápidos</h2>
+            <div class="mt-4 space-y-3">
+                {% if perms.pacientes.view_paciente %}
+                <a href="{% url 'pacientes:lista' %}" class="btn btn-principal w-full">Buscar expedientes</a>
+                {% endif %}
+                {% if perms.citas.add_cita %}
+                <a href="{% url 'citas:nueva' %}" class="btn btn-secundario w-full">Agendar una cita de control</a>
+                {% endif %}
+                {% if perms.inventario.view_producto %}
+                <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario w-full">Consultar medicamentos disponibles</a>
+                {% endif %}
+            </div>
+            <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Otros módulos</h3>
+            <ul class="mt-2 space-y-2 text-sm">
+                <li class="flex items-center justify-between gap-2 rounded-lg bg-blanco-humo px-3 py-2">
+                    <span class="flex items-center gap-2 text-slate-600">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg>
+                        Consultas
+                    </span>
+                    <span class="insignia shrink-0 bg-white text-xs text-slate-500 ring-1 ring-slate-200">Próximamente</span>
+                </li>
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}

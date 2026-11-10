@@ -28,6 +28,7 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('cuentas/entrar/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('cuentas/salir/', auth_views.LogoutView.as_view(), name='logout'),
+    path('cuentas/', include('usuarios.urls')),
     path('admin/', admin.site.urls),
     path('pacientes/', include('pacientes.urls')),
     path('inventario/', include('inventario.urls')),

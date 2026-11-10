@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Mi perfil · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+    <h1 class="text-3xl font-extrabold text-marino">Mi perfil</h1>
+    <p class="mt-1 text-slate-600">Consulta los datos de tu cuenta en la clínica.</p>
+
+    <section class="tarjeta mt-6 overflow-hidden p-0" aria-labelledby="datos-cuenta" style="overflow-wrap: anywhere">
+        <div class="h-2 bg-marino" aria-hidden="true"></div>
+        <div class="p-5 sm:p-6">
+            {% with nombre=user.get_full_name|default:user.username %}
+            <div class="flex items-center gap-4">
+                <span class="avatar h-14 w-14 text-xl" aria-hidden="true">{{ nombre|first|upper }}</span>
+                <div class="min-w-0">
+                    <h2 id="datos-cuenta" class="text-xl font-bold text-marino">{{ nombre }}</h2>
+                    <span class="insignia mt-1 bg-verde-teal-claro text-verde-teal-oscuro">{{ user.get_rol_display }}</span>
+                </div>
+            </div>
+            {% endwith %}
+
+            <dl class="mt-5 grid gap-4 border-t border-slate-200 py-4 sm:grid-cols-2">
+                <div class="min-w-0">
+                    <dt class="text-sm font-medium text-slate-600">Usuario</dt>
+                    <dd class="mt-1 font-semibold">{{ user.username }}</dd>
+                </div>
+                <div class="min-w-0">
+                    <dt class="text-sm font-medium text-slate-600">Correo electrónico</dt>
+                    <dd class="mt-1 font-semibold">{{ user.email|default:"Sin correo registrado" }}</dd>
+                </div>
+            </dl>
+        </div>
+    </section>
+</div>
+{% endblock %}

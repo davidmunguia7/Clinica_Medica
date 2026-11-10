@@ -1,0 +1,36 @@
+{% comment %}
+Consultas del paciente para su expediente (pacientes/detalle.html).
+Uso: {% include "consultas/_historial_paciente.html" with paciente=paciente %}
+{% endcomment %}
+{% load consultas_extras %}
+{% if perms.consultas.view_consulta %}
+{% consultas_del_paciente paciente as consultas %}
+<section class="tarjeta mt-6 print:hidden">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="titulo-seccion">Consultas</h2>
+        {% if perms.consultas.add_consulta and paciente.activo %}
+        <a href="{% url 'consultas:nueva' paciente.pk %}" class="btn btn-acento btn-chico">+ Atender sin cita</a>
+        {% endif %}
+    </div>
+    {% if consultas %}
+    <ul class="mt-3 divide-y divide-slate-100">
+        {% for c in consultas %}
+        <li>
+            <a href="{{ c.get_absolute_url }}" class="block rounded-lg px-2 py-3 hover:bg-blanco-humo">
+                <span class="flex flex-wrap items-baseline justify-between gap-2">
+                    <span class="font-semibold text-marino">{{ c.fecha|date:"d/m/Y" }} · {{ c.motivo }}</span>
+                    <span class="text-sm text-slate-500">{{ c.nombre_medico }}</span>
+                </span>
+                <span class="block text-sm text-gris-oscuro">{{ c.diagnostico|truncatechars:140 }}</span>
+                {% if c.medicamentos.all %}
+                <span class="mt-1 block text-xs text-slate-500">Receta: {% for m in c.medicamentos.all %}{{ m.nombre_medicamento }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                {% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-2 text-sm text-slate-600">Todavía no tiene consultas registradas.</p>
+    {% endif %}
+</section>
+{% endif %}

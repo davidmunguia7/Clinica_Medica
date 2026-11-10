@@ -77,7 +77,7 @@ class ProductoDetailView(PermissionRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["lotes"] = self.object.lotes.filter(cantidad_actual__gt=0)
-        ctx["movimientos"] = self.object.movimientos.select_related("lote", "usuario")[:15]
+        ctx["movimientos"] = self.object.movimientos.select_related("lote", "usuario", "paciente")[:15]
         return ctx
 
 
@@ -149,7 +149,7 @@ class MovimientoListView(PermissionRequiredMixin, ListView):
     permission_required = "inventario.view_movimiento"
     model = Movimiento
     paginate_by = 50
-    queryset = Movimiento.objects.select_related("producto", "lote", "usuario")
+    queryset = Movimiento.objects.select_related("producto", "lote", "usuario", "paciente")
 
 
 # ---------------------------------------------------------------------------

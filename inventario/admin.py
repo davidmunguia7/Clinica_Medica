@@ -35,9 +35,9 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(Movimiento)
 class MovimientoAdmin(admin.ModelAdmin):
-    list_display = ["fecha", "tipo", "concepto", "producto", "lote", "cantidad", "precio_unitario", "usuario", "motivo"]
+    list_display = ["fecha", "tipo", "concepto", "producto", "lote", "cantidad", "precio_unitario", "paciente", "usuario", "motivo"]
     list_filter = ["tipo", "concepto", "fecha"]
-    list_select_related = ["producto", "lote", "usuario"]
+    list_select_related = ["producto", "lote", "usuario", "paciente"]
     search_fields = ["producto__nombre", "lote__numero_lote"]
     readonly_fields = [f.name for f in Movimiento._meta.fields]
 

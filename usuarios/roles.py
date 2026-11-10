@@ -26,24 +26,31 @@ def permisos(app, modelo, *acciones):
 
 
 # Recepción: registra pacientes, busca expedientes y maneja la agenda y el inventario.
+# Entrega lo que el médico recetó (ve la receta, pero no el diagnóstico).
 _RECEPCION = (
     permisos("pacientes", "paciente", VER, CREAR, EDITAR)
     | permisos("citas", "cita", VER, CREAR, EDITAR)
     | permisos("inventario", "producto", VER, CREAR, EDITAR)
     | permisos("inventario", "movimiento", VER, CREAR)  # entradas, salidas e historial
+    | permisos("consultas", "medicamentorecetado", VER)
+    | {"consultas.entregar_medicamentorecetado"}
 )
 
-# Médico: consulta y actualiza el expediente, y lleva su agenda.
-# No registra pacientes nuevos y el inventario solo lo consulta.
+# Médico: atiende (consulta, diagnóstico y receta), actualiza el expediente y lleva su agenda.
+# No registra pacientes nuevos y el inventario solo lo consulta (lo recetado lo entrega Recepción).
 _MEDICO = (
     permisos("pacientes", "paciente", VER, EDITAR)
     | permisos("citas", "cita", VER, CREAR, EDITAR)
     | permisos("inventario", "producto", VER)
+    | permisos("consultas", "consulta", VER, CREAR, EDITAR)
+    | permisos("consultas", "medicamentorecetado", VER, CREAR, EDITAR)
 )
 
 # Administrador: todo lo de Recepción, más los usuarios y el panel de administración.
+# Puede leer las consultas, pero no las escribe (eso es del médico).
 _ADMINISTRADOR = (
     _RECEPCION
+    | permisos("consultas", "consulta", VER)
     | permisos("usuarios", "usuario", VER, CREAR, EDITAR)
     # Para revisar todo desde el panel de administración (/admin/):
     | permisos("pacientes", "historialclinico", VER, EDITAR)
@@ -63,8 +70,8 @@ PERMISOS_POR_ROL = {
 
 DESCRIPCIONES = {
     Rol.ADMINISTRADOR: "Dirige la clínica: crea usuarios, asigna roles y revisa todo.",
-    Rol.MEDICO: "Atiende: consulta el expediente y las alergias, y lleva su agenda.",
-    Rol.RECEPCION: "Recibe al paciente: lo registra y maneja la agenda y el inventario.",
+    Rol.MEDICO: "Atiende: registra la consulta, el diagnóstico y la receta, y lleva su agenda.",
+    Rol.RECEPCION: "Recibe al paciente: lo registra, maneja la agenda y el inventario y entrega lo recetado.",
 }
 
 # Lo mismo que PERMISOS_POR_ROL, dicho en palabras, para la pantalla «Usuarios y roles»
@@ -79,6 +86,12 @@ CAPACIDADES = [
         ("Ver la agenda", "citas.view_cita"),
         ("Agendar citas", "citas.add_cita"),
         ("Confirmar, atender o cancelar citas y enviar recordatorios", "citas.change_cita"),
+    ]),
+    ("Consultas y recetas", [
+        ("Atender: registrar la consulta, el diagnóstico y la receta", "consultas.add_consulta"),
+        ("Ver las consultas y los diagnósticos", "consultas.view_consulta"),
+        ("Ver e imprimir las recetas", "consultas.view_medicamentorecetado"),
+        ("Entregar lo recetado (se descuenta del inventario)", "consultas.entregar_medicamentorecetado"),
     ]),
     ("Inventario", [
         ("Consultar existencias y el panel por categorías", "inventario.view_producto"),

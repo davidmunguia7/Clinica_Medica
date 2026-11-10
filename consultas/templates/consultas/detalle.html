@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Consulta de {{ consulta.paciente.nombre_completo }} · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'consultas:lista' %}" class="enlace text-sm">← Consultas</a>
+</div>
+
+<div class="tarjeta overflow-hidden p-0">
+    <div class="h-2 bg-verde-teal" aria-hidden="true"></div>
+    <div class="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
+        <div class="min-w-0">
+            <p class="text-sm font-bold uppercase tracking-wide text-verde-teal-oscuro">Consulta n.° {{ consulta.pk }} · {{ consulta.fecha|date:"l j \d\e F \d\e Y, g:i a"|capfirst }}</p>
+            <h1 class="text-3xl font-extrabold text-marino">{{ consulta.paciente.nombre_completo }}</h1>
+            <p class="mt-1 text-slate-600">{{ consulta.paciente.edad_texto }} · Expediente {{ consulta.paciente.numero_expediente }} · Atendió {{ consulta.nombre_medico }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if puede_editar %}
+            <a href="{% url 'consultas:editar' consulta.pk %}" class="btn btn-principal">Editar consulta</a>
+            {% endif %}
+            {% if medicamentos %}
+            <a href="{% url 'consultas:receta' consulta.pk %}" class="btn btn-acento">Imprimir receta</a>
+            {% endif %}
+            {% if perms.pacientes.view_paciente %}
+            <a href="{{ consulta.paciente.get_absolute_url }}" class="btn btn-secundario">Ver expediente</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <section class="tarjeta min-w-0 lg:col-span-2">
+        <h2 class="titulo-seccion">Consulta</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Motivo" valor=consulta.motivo %}
+            {% include "pacientes/_dato.html" with etiqueta="Síntomas y hallazgos" valor=consulta.sintomas %}
+            {% include "pacientes/_dato.html" with etiqueta="Diagnóstico" valor=consulta.diagnostico %}
+            {% include "pacientes/_dato.html" with etiqueta="Indicaciones y tratamiento" valor=consulta.indicaciones %}
+        </dl>
+    </section>
+
+    <section class="tarjeta min-w-0">
+        <h2 class="titulo-seccion">Datos</h2>
+        <dl class="mt-2 divide-y divide-slate-100">
+            {% include "pacientes/_dato.html" with etiqueta="Médico" valor=consulta.nombre_medico %}
+            {% if consulta.cita %}
+            {% include "pacientes/_dato.html" with etiqueta="Cita" valor=consulta.cita.fecha_hora|date:"d/m/Y g:i a" %}
+            {% else %}
+            {% include "pacientes/_dato.html" with etiqueta="Cita" valor="Llegó sin cita" %}
+            {% endif %}
+            {% include "pacientes/_dato.html" with etiqueta="Alergias" valor=consulta.paciente.historial.alergias|default:"No refiere" %}
+        </dl>
+        {% if consulta.cita and perms.citas.view_cita %}
+        <a href="{{ consulta.cita.get_absolute_url }}" class="enlace mt-3 inline-block text-sm">Ver la cita</a>
+        {% endif %}
+    </section>
+</div>
+
+<section class="tarjeta mt-6">
+    <h2 class="titulo-seccion">Receta</h2>
+    {% if medicamentos %}
+    <ul class="mt-3 divide-y divide-slate-100">
+        {% for m in medicamentos %}
+        <li class="flex flex-wrap items-start justify-between gap-3 py-3">
+            <div class="min-w-0">
+                <p class="font-semibold text-marino">{{ m.nombre_medicamento }}</p>
+                <p class="text-sm text-gris-oscuro">{{ m.dosis }} {{ m.frecuencia }}{% if m.duracion %} {{ m.duracion }}{% endif %}{% if m.indicaciones %} · {{ m.indicaciones }}{% endif %}</p>
+                <p class="text-xs text-slate-500">
+                    Cantidad: {{ m.cantidad }}{% if m.es_de_la_farmacia %} · de la farmacia de la clínica{% else %} · se compra afuera{% endif %}
+                    {% if m.entregado_en %} · entregado el {{ m.entregado_en|date:"d/m/Y H:i" }}{% if m.entregado_por %} por {{ m.entregado_por.get_full_name|default:m.entregado_por.username }}{% endif %}{% endif %}
+                </p>
+            </div>
+            {% include "consultas/_estado_medicamento.html" with m=m %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-2 text-sm text-slate-600">No se recetaron medicamentos.</p>
+    {% endif %}
+</section>
+{% endblock %}

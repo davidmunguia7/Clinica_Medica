@@ -1,0 +1,2 @@
+{# Insignia del estado de un medicamento recetado. Uso: {% include "consultas/_estado_medicamento.html" with m=medicamento %} #}
+<span class="insignia shrink-0 px-2.5 py-0.5 text-xs {% if m.estado == 'ENTREGADO' %}bg-verde-teal-claro text-verde-teal-oscuro{% elif m.estado == 'POR_ENTREGAR' %}bg-coral-claro text-coral-oscuro{% else %}bg-slate-100 text-slate-600{% endif %}">{{ m.get_estado_display }}</span>

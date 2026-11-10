@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Entregar medicamentos · {{ consulta.paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+    <a href="{% url 'consultas:por_entregar' %}" class="enlace text-sm">← Recetas por entregar</a>
+    <h1 class="mt-1 text-3xl font-extrabold text-marino">Entregar medicamentos</h1>
+    <p class="mt-1 text-slate-600">{{ consulta.paciente.nombre_completo }} · Expediente {{ consulta.paciente.numero_expediente }} · recetó {{ consulta.nombre_medico }}</p>
+
+    {% if pendientes %}
+    <form method="post" class="mt-6 space-y-6">
+        {% csrf_token %}
+        <section class="tarjeta">
+            <h2 class="titulo-seccion">¿Qué se le entrega?</h2>
+            <p class="mt-1 text-sm text-slate-600">Al entregar, se descuenta del inventario empezando por el lote que vence antes (nunca uno vencido).</p>
+            <ul class="mt-4 space-y-4">
+                {% for m in pendientes %}
+                <li class="rounded-xl border {% if m.alcanza %}border-slate-200{% else %}border-coral/50 bg-coral-claro{% endif %} p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-semibold text-marino">{{ m.nombre_medicamento }}</p>
+                            <p class="text-sm text-gris-oscuro">{{ m.dosis }} {{ m.frecuencia }}{% if m.duracion %} {{ m.duracion }}{% endif %}</p>
+                        </div>
+                        <p class="text-sm tabular-nums">Recetado: <strong>{{ m.cantidad }}</strong> · hay <strong class="{% if not m.alcanza %}text-red-700{% endif %}">{{ m.disponible }}</strong> {{ m.producto.unidad_medida }}</p>
+                    </div>
+                    {% if not m.alcanza %}
+                    <p class="mt-2 text-sm font-medium text-coral-oscuro">No alcanza lo que hay en la farmacia. Puede dejarlo pendiente o indicar que lo compra afuera.</p>
+                    {% endif %}
+                    <fieldset class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        <legend class="sr-only">Qué hacer con {{ m.nombre_medicamento }}</legend>
+                        <label class="flex items-center gap-2 {% if not m.alcanza %}text-slate-400{% else %}cursor-pointer{% endif %}">
+                            <input type="radio" name="accion-{{ m.pk }}" value="entregar" class="casilla" {% if m.alcanza %}checked{% else %}disabled{% endif %}> Entregar
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-2">
+                            <input type="radio" name="accion-{{ m.pk }}" value="afuera" class="casilla"> Lo compra afuera
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-2">
+                            <input type="radio" name="accion-{{ m.pk }}" value="pendiente" class="casilla" {% if not m.alcanza %}checked{% endif %}> Dejar pendiente
+                        </label>
+                    </fieldset>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="tarjeta">
+            <h2 class="titulo-seccion">¿Se cobra?</h2>
+            <fieldset class="mt-3 space-y-2 text-sm">
+                <legend class="sr-only">Cómo queda en el inventario</legend>
+                {% for valor, texto in conceptos.items %}
+                <label class="flex cursor-pointer items-center gap-2">
+                    <input type="radio" name="concepto" value="{{ valor }}" class="casilla" {% if valor == concepto_inicial %}checked{% endif %}> {{ texto }}
+                </label>
+                {% endfor %}
+            </fieldset>
+            <p class="mt-2 text-xs text-slate-500">Las ventas se cobran al precio de cada producto y aparecen en el reporte del mes.</p>
+        </section>
+
+        <div class="flex flex-wrap justify-end gap-3">
+            <a href="{% url 'consultas:receta' consulta.pk %}" class="btn btn-secundario">Ver receta</a>
+            <button type="submit" class="btn btn-acento">Guardar entrega</button>
+        </div>
+    </form>
+    {% else %}
+    <div class="tarjeta mt-6">
+        <p class="text-slate-600">Esta receta ya no tiene medicamentos por entregar.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

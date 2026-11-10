@@ -134,6 +134,11 @@ class Movimiento(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="movimientos_inventario",
     )
+    # A quién se le entregó (las salidas por receta médica, ver consultas/entregas.py)
+    paciente = models.ForeignKey(
+        "pacientes.Paciente", on_delete=models.PROTECT,
+        null=True, blank=True, related_name="medicamentos_entregados",
+    )
 
     class Meta:
         ordering = ["-fecha"]

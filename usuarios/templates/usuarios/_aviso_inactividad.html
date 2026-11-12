@@ -4,6 +4,9 @@ Sesión por inactividad (usuarios/middleware.py · CierrePorInactividad), desde 
   servidor que sigue ahí, para no perder una consulta larga a medio escribir.
 - Si no la usa, dos minutos antes del cierre aparece este aviso; al llegar a cero la página se
   recarga y el sistema pide entrar de nuevo.
+- Si en la página hay un formulario con data-borrador (por ejemplo, la consulta del médico) a medio
+  llenar, antes de recargar lo escrito se guarda en esta pestaña (sessionStorage: se borra al
+  cerrarla) y, al volver a entrar el mismo usuario, se vuelve a poner en el formulario.
 {% endcomment %}
 <div id="aviso-inactividad" hidden role="alertdialog" aria-labelledby="aviso-inactividad-titulo" aria-describedby="aviso-inactividad-texto"
      class="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-2xl border border-coral/40 bg-white p-5 shadow-xl print:hidden">
@@ -27,11 +30,82 @@ Sesión por inactividad (usuarios/middleware.py · CierrePorInactividad), desde 
         var ultimoContacto = Date.now();   // la última vez que el servidor supo de nosotros
         var ultimoUso = Date.now();
 
+        // Borrador del formulario a medio llenar (solo de este usuario, en esta pestaña y por 2 horas)
+        var formulario = document.querySelector('form[data-borrador]');
+        var claveBorrador = 'borrador:' + window.location.pathname;
+        var usuario = '{{ user.pk }}';
+        var hayCambios = false;
+
+        function camposDelBorrador() {
+            return Array.prototype.filter.call(formulario.elements, function (c) {
+                return c.name && c.name !== 'csrfmiddlewaretoken' && ['hidden', 'password', 'file', 'submit', 'button'].indexOf(c.type) === -1;
+            });
+        }
+
+        function guardarBorrador() {
+            if (!formulario || !hayCambios) return;
+            var valores = {};
+            camposDelBorrador().forEach(function (c) {
+                if (c.type === 'radio') { if (c.checked) valores[c.name] = c.value; }
+                else valores[c.name] = c.type === 'checkbox' ? c.checked : c.value;
+            });
+            try {
+                sessionStorage.setItem(claveBorrador, JSON.stringify({usuario: usuario, momento: Date.now(), valores: valores}));
+            } catch (e) { /* sin almacenamiento disponible: no se guarda */ }
+        }
+
+        function recuperarBorrador() {
+            var guardado = null;
+            try {
+                guardado = JSON.parse(sessionStorage.getItem(claveBorrador) || 'null');
+                sessionStorage.removeItem(claveBorrador);
+            } catch (e) { return; }
+            if (!guardado || guardado.usuario !== usuario || Date.now() - guardado.momento > 2 * 60 * 60 * 1000) return;
+            camposDelBorrador().forEach(function (c) {
+                if (!(c.name in guardado.valores)) return;
+                var valor = guardado.valores[c.name];
+                if (c.type === 'radio') c.checked = c.value === valor;
+                else if (c.type === 'checkbox') c.checked = valor;
+                else c.value = valor;
+            });
+            hayCambios = true;
+            var aviso = document.createElement('div');
+            aviso.setAttribute('role', 'status');
+            aviso.className = 'mb-6 rounded-lg border border-verde-teal/30 bg-verde-teal-claro px-4 py-3 text-sm font-medium text-verde-teal-oscuro print:hidden';
+            aviso.textContent = 'Recuperamos lo que había escrito antes de que se cerrara la sesión. Revíselo y guárdelo.';
+            var principal = document.querySelector('main');
+            if (principal) principal.insertBefore(aviso, principal.firstChild);
+        }
+
+        // Un borrador solo sirve para volver a su formulario justo después de entrar: si se abre
+        // cualquier otra página (por ejemplo, la consulta ya guardada), se descarta.
+        try {
+            Object.keys(sessionStorage).forEach(function (clave) {
+                if (clave.indexOf('borrador:') === 0 && clave !== claveBorrador) sessionStorage.removeItem(clave);
+            });
+        } catch (e) {}
+
+        if (formulario) {
+            ['input', 'change'].forEach(function (evento) {
+                formulario.addEventListener(evento, function () { hayCambios = true; });
+            });
+            // También al guardar: si la sesión ya se había cerrado, el sistema pide entrar y lo escrito no se pierde
+            formulario.addEventListener('submit', guardarBorrador);
+            if (document.referrer.indexOf('{% url "login" %}') !== -1) {
+                recuperarBorrador();
+            } else {
+                try { sessionStorage.removeItem(claveBorrador); } catch (e) {}
+            }
+        }
+
         function avisarAlServidor() {
             ultimoContacto = Date.now();
             caja.hidden = true;
             fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': token ? token.value : ''}})
-                .then(function (respuesta) { if (respuesta.status !== 204) window.location.reload(); });
+                .then(function (respuesta) {
+                    // La sesión ya se había cerrado (por ejemplo, la computadora estuvo suspendida)
+                    if (respuesta.status !== 204) { guardarBorrador(); window.location.reload(); }
+                });
         }
 
         ['keydown', 'pointerdown', 'input', 'wheel', 'touchstart'].forEach(function (evento) {
@@ -48,6 +122,7 @@ Sesión por inactividad (usuarios/middleware.py · CierrePorInactividad), desde 
             var queda = LIMITE - (ahora - ultimoContacto);
             if (queda <= -5000) {
                 // Unos segundos de margen para que el servidor ya la haya cerrado
+                guardarBorrador();
                 window.location.assign(window.location.pathname + window.location.search);
             } else if (queda <= AVISO) {
                 var segundos = Math.max(0, Math.ceil(queda / 1000));

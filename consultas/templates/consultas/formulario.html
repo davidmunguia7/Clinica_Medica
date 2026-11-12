@@ -44,7 +44,8 @@
 </div>
 {% endif %}
 
-<form method="post" novalidate class="mt-6 grid gap-6 lg:grid-cols-3">
+{# data-borrador: si la sesión se cierra por inactividad, lo escrito se recupera al volver a entrar (usuarios/_aviso_inactividad.html) #}
+<form method="post" novalidate data-borrador class="mt-6 grid gap-6 lg:grid-cols-3">
     {% csrf_token %}
     <div class="min-w-0 space-y-6 lg:col-span-2">
         {% if avisos_alergia %}
@@ -75,7 +76,7 @@
             <p class="mt-1 text-sm text-slate-600">
                 Elija el medicamento de la farmacia de la clínica (se ve cuánto hay) o escriba el nombre si el paciente
                 lo compra afuera. Lo de la farmacia <strong>se descuenta del inventario cuando Recepción lo entrega</strong>.
-                Las filas que deje vacías no se guardan.
+                Si no receta nada, deje esto en blanco.
             </p>
             {{ formset.management_form }}
 
@@ -92,7 +93,7 @@
 
             <div class="mt-4 space-y-4">
                 {% for f in formset %}
-                <fieldset class="rounded-xl border {% if f.errors %}border-red-300 bg-red-50/40{% else %}border-slate-200{% endif %} p-4">
+                <fieldset data-medicamento{% if f.instance.pk or f.errors %} data-con-datos{% endif %} class="rounded-xl border {% if f.errors %}border-red-300 bg-red-50/40{% else %}border-slate-200{% endif %} p-4">
                     <legend class="px-1 text-sm font-semibold text-marino">Medicamento {{ forloop.counter }}</legend>
                     {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
                     {% for error in f.non_field_errors %}<p class="mb-3 text-sm font-medium text-red-700">{{ error }}</p>{% endfor %}
@@ -113,7 +114,9 @@
                 </fieldset>
                 {% endfor %}
             </div>
-            <p class="mt-3 text-xs text-slate-500">¿Necesita más filas? Guarde y use «Editar consulta» para agregar otros medicamentos.</p>
+            {# Sin JavaScript se ven todas las filas y el botón no aparece #}
+            <button type="button" hidden data-agregar-medicamento class="btn btn-secundario mt-4">+ Agregar otro medicamento</button>
+            <p class="mt-3 text-xs text-slate-500" data-sin-mas-filas>¿Necesita más? Guarde y use «Editar consulta» para agregar otros medicamentos.</p>
         </section>
 
         <div class="flex flex-wrap justify-end gap-3">
@@ -148,4 +151,62 @@
         </section>
     </aside>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Receta más sencilla: se ve un solo medicamento (más los que ya tienen datos) y los demás
+    // aparecen con «+ Agregar otro medicamento». «Otro medicamento» (el nombre escrito) se esconde
+    // cuando se eligió uno de la farmacia, porque ya no hace falta.
+    (function () {
+        var filas = Array.prototype.slice.call(document.querySelectorAll('[data-medicamento]'));
+        var boton = document.querySelector('[data-agregar-medicamento]');
+        var sinMas = document.querySelector('[data-sin-mas-filas]');
+        if (!filas.length || !boton) return;
+
+        function campo(fila, nombre) { return fila.querySelector('[name$="-' + nombre + '"]'); }
+
+        function tieneDatos(fila) {
+            if (fila.hasAttribute('data-con-datos')) return true;
+            return ['producto', 'nombre', 'dosis', 'frecuencia', 'duracion', 'indicaciones'].some(function (nombre) {
+                var c = campo(fila, nombre);
+                return c && c.value.trim() !== '';
+            });
+        }
+
+        function ajustarNombre(fila) {
+            var producto = campo(fila, 'producto');
+            var nombre = campo(fila, 'nombre');
+            if (producto && nombre) nombre.closest('div').hidden = producto.value !== '' && nombre.value.trim() === '';
+        }
+
+        function ocultas() { return filas.filter(function (fila) { return fila.hidden; }); }
+
+        function actualizarBoton() {
+            boton.hidden = ocultas().length === 0;
+            if (sinMas) sinMas.hidden = !boton.hidden;
+        }
+
+        var hayUnaVacia = false;
+        filas.forEach(function (fila) {
+            ajustarNombre(fila);
+            var producto = campo(fila, 'producto');
+            if (producto) producto.addEventListener('change', function () { ajustarNombre(fila); });
+            if (tieneDatos(fila)) return;
+            if (hayUnaVacia) fila.hidden = true;
+            hayUnaVacia = true;
+        });
+
+        boton.addEventListener('click', function () {
+            var siguiente = ocultas()[0];
+            if (siguiente) {
+                siguiente.hidden = false;
+                var producto = campo(siguiente, 'producto');
+                if (producto) producto.focus();
+            }
+            actualizarBoton();
+        });
+        actualizarBoton();
+    })();
+</script>
 {% endblock %}

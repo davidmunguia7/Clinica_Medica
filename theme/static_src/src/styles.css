@@ -71,19 +71,20 @@
     @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-center text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
   /* Un solo color para los botones: la acción más importante de la pantalla va en azul marino
-     relleno (btn-acento); las demás, con borde. El coral queda para avisos (por vencer, bajo el
-     mínimo…), no para botones. */
+     relleno (btn-acento); las demás llevan fondo de color suave y borde, para que se vean como
+     botones y no como campos o recuadros. El coral queda para avisos (por vencer, bajo el
+     mínimo…), no para botones. La línea de abajo (box-shadow) les da un poco de relieve. */
   .btn-acento {
-    @apply bg-marino text-white hover:bg-marino-oscuro focus-visible:ring-marino;
+    @apply border border-marino-oscuro bg-marino text-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.2)] hover:bg-marino-oscuro focus-visible:ring-marino;
   }
   .btn-principal {
-    @apply border border-marino bg-white text-marino hover:bg-marino-claro focus-visible:ring-marino;
+    @apply border border-marino/60 bg-marino-claro text-marino shadow-[inset_0_-2px_0_rgb(30_58_138/0.15)] hover:border-marino hover:bg-[#d7e0f3] focus-visible:ring-marino;
   }
   .btn-secundario {
-    @apply border border-slate-300 bg-white text-gris-oscuro hover:bg-slate-50 focus-visible:ring-marino;
+    @apply border border-slate-300 bg-slate-100 text-gris-oscuro shadow-[inset_0_-2px_0_rgb(15_23_42/0.12)] hover:border-slate-400 hover:bg-slate-200 focus-visible:ring-marino;
   }
   .btn-peligro {
-    @apply border border-red-300 bg-white text-red-700 hover:bg-red-50 focus-visible:ring-red-600;
+    @apply border border-red-300 bg-red-50 text-red-700 shadow-[inset_0_-2px_0_rgb(185_28_28/0.12)] hover:border-red-400 hover:bg-red-100 focus-visible:ring-red-600;
   }
   .btn-chico {
     @apply px-3 py-1.5 text-sm;

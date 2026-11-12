@@ -72,7 +72,7 @@
     {% endfor %}
 </ol>
 {% else %}
-<div class="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+<div class="tarjeta p-8 text-center">
     <p class="text-lg font-semibold text-marino">No hay citas este día.</p>
     {% if perms.citas.add_cita %}
     <a href="{% url 'citas:nueva' %}?fecha={{ fecha|date:'Y-m-d' }}" class="btn btn-acento mt-5">Agendar una cita</a>

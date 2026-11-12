@@ -7,21 +7,19 @@
 {% block boton_registrar %}{% endblock %}
 
 {% block content %}
-<section class="relative overflow-hidden rounded-3xl bg-marino px-6 py-8 text-white sm:px-10 sm:py-10">
-    <div class="absolute -right-12 -top-14 hidden h-44 w-44 rounded-full bg-verde-teal sm:block" aria-hidden="true"></div>
-    <div class="absolute -bottom-16 right-28 hidden h-32 w-32 rounded-full bg-coral sm:block" aria-hidden="true"></div>
-    <div class="relative max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-wider text-marino-claro">{{ hoy|date:"l j \d\e F \d\e Y"|capfirst }}</p>
-        <h1 class="mt-1 text-2xl font-extrabold sm:text-3xl">{{ saludo }}, {{ user.first_name|default:user.username }}</h1>
-        <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-marino-claro">
-            <span class="insignia bg-white px-3 py-0.5 text-sm font-semibold text-marino">{{ user.get_rol_display }}</span>
-            <span>{% block lema %}Cuidado integral para toda tu familia.{% endblock %}</span>
-        </p>
+{# Encabezado sencillo: fecha, saludo, rol y el buscador de pacientes #}
+<section class="border-b border-slate-200 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div class="min-w-0">
+            <p class="text-sm text-slate-500">{{ hoy|date:"l j \d\e F \d\e Y"|capfirst }}</p>
+            <h1 class="mt-1 text-2xl font-semibold text-gris-oscuro">{{ saludo }}, {{ user.first_name|default:user.username }}</h1>
+            <p class="mt-1 text-slate-600">{{ user.get_rol_display }} · {% block lema %}Cuidado integral para toda tu familia.{% endblock %}</p>
+        </div>
         {% if perms.pacientes.view_paciente %}
-        <form method="get" action="{% url 'pacientes:lista' %}" role="search" class="mt-6 flex flex-col gap-2 sm:flex-row">
+        <form method="get" action="{% url 'pacientes:lista' %}" role="search" class="flex w-full gap-2 lg:w-auto lg:min-w-[26rem]">
             <label for="buscar-inicio" class="sr-only">Buscar paciente por nombre, DUI o número de expediente</label>
             <input id="buscar-inicio" name="q" type="search" autocomplete="off" class="campo"
-                   placeholder="Nombre, DUI o n.° de expediente">
+                   placeholder="Buscar paciente (nombre, DUI…)">
             <button type="submit" class="btn btn-acento">Buscar</button>
         </form>
         {% endif %}

@@ -1,24 +1,12 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}Iniciar sesión · Clínica Familiar{% endblock %}
 
 {% block content %}
-<div class="mx-auto grid max-w-4xl overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-slate-200 md:grid-cols-2">
-    <div class="relative hidden overflow-hidden bg-marino p-10 text-white md:flex md:flex-col md:justify-between">
-        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-verde-teal" aria-hidden="true"></div>
-        <div class="absolute -bottom-20 -left-12 h-44 w-44 rounded-full bg-coral" aria-hidden="true"></div>
-        <div class="relative">
-            <span class="inline-flex rounded-2xl bg-white p-3 shadow">
-                <img src="{% static 'img/logo-clinica-familiar.svg' %}" alt="" class="h-14 w-auto">
-            </span>
-            <p class="mt-8 text-3xl font-extrabold uppercase leading-tight">Cuidado integral para toda tu familia</p>
-        </div>
-        <p class="relative mt-10 pl-36 text-right text-sm text-marino-claro">Sistema de gestión de la Clínica Familiar</p>
-    </div>
-
-    <div class="p-8 sm:p-10">
-        <h1 class="text-2xl font-bold text-marino">Iniciar sesión</h1>
+{# Una sola caja, sin adornos (el logo y el nombre de la clínica ya están en el encabezado) #}
+<div class="mx-auto max-w-md sm:mt-6">
+    <div class="tarjeta p-8 sm:p-10">
+        <h1 class="text-xl font-semibold text-gris-oscuro">Iniciar sesión</h1>
         <p class="mt-1 text-sm text-slate-600">Ingrese con su usuario y contraseña.</p>
 
         {% if form.non_field_errors %}
@@ -50,8 +38,8 @@
             <button type="submit" class="btn btn-acento w-full">Entrar</button>
         </form>
 
-        <details class="mt-6 rounded-lg border border-slate-200 bg-blanco-humo px-4 py-3 text-sm">
-            <summary class="cursor-pointer font-semibold text-marino">¿Olvidó su contraseña?</summary>
+        <details class="mt-6 border-t border-slate-200 pt-4 text-sm">
+            <summary class="cursor-pointer font-medium text-marino">¿Olvidó su contraseña?</summary>
             <p class="mt-2 text-slate-600">
                 Pida al Administrador de la clínica que se la restablezca. Le dará una contraseña temporal y,
                 al entrar con ella, el sistema le pedirá crear una nueva.

@@ -19,7 +19,7 @@
 </div>
 
 {% if lotes_vencidos or lotes_por_vencer or total_bajo_minimo %}
-<section class="mb-6 rounded-2xl border border-coral/40 bg-coral-claro p-5 text-sm" aria-labelledby="titulo-alertas">
+<section class="tarjeta mb-6 text-sm" aria-labelledby="titulo-alertas">
     <h2 id="titulo-alertas" class="mb-2 font-bold text-gris-oscuro">Revisar</h2>
     <ul class="space-y-1 text-gris-oscuro">
         {% for l in lotes_vencidos %}
@@ -27,10 +27,10 @@
             {% if perms.inventario.add_movimiento %}<a href="{% url 'inventario:baja' l.pk %}" class="enlace">Dar de baja</a>{% endif %}</li>
         {% endfor %}
         {% for l in lotes_por_vencer %}
-        <li><span class="insignia mr-1 bg-white px-2 py-0.5 text-xs text-coral-oscuro">Por vencer</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }} vence el {{ l.fecha_vencimiento|date:"d/m/Y" }} ({{ l.cantidad_actual }} en existencia).</li>
+        <li><span class="insignia mr-1 bg-coral-claro px-2 py-0.5 text-xs text-coral-oscuro">Por vencer</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }} vence el {{ l.fecha_vencimiento|date:"d/m/Y" }} ({{ l.cantidad_actual }} en existencia).</li>
         {% endfor %}
         {% if total_bajo_minimo %}
-        <li><span class="insignia mr-1 bg-white px-2 py-0.5 text-xs text-coral-oscuro">Bajo el mínimo</span>
+        <li><span class="insignia mr-1 bg-coral-claro px-2 py-0.5 text-xs text-coral-oscuro">Bajo el mínimo</span>
             {{ total_bajo_minimo }} producto{{ total_bajo_minimo|pluralize }} en o por debajo de su existencia mínima.
             {% if filtro != 'bajo' %}<a href="?filtro=bajo" class="enlace">Ver cuáles</a>{% endif %}
         </li>

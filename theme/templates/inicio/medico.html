@@ -83,21 +83,13 @@
 
         <section class="tarjeta min-w-0">
             <h2 class="titulo-seccion">Accesos rápidos</h2>
-            <div class="mt-4 space-y-3">
-                {% if perms.pacientes.view_paciente %}
-                <a href="{% url 'pacientes:lista' %}" class="btn btn-principal w-full">Buscar expedientes</a>
-                {% endif %}
-                {% if perms.citas.add_cita %}
-                <a href="{% url 'citas:nueva' %}" class="btn btn-secundario w-full">Agendar una cita de control</a>
-                {% endif %}
-                {% if perms.consultas.view_consulta %}
-                <a href="{% url 'consultas:lista' %}" class="btn btn-secundario w-full">Mis consultas{% if consultas_hoy %} ({{ consultas_hoy }} hoy){% endif %}</a>
-                {% endif %}
-                {% if perms.inventario.view_producto %}
-                <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario w-full">Consultar medicamentos disponibles</a>
-                {% endif %}
-            </div>
-            <p class="mt-4 text-xs text-slate-500">Para atender a un paciente sin cita, ábralo en «Buscar expedientes» y use «Atender sin cita».</p>
+            <ul class="mt-2 divide-y divide-slate-100">
+                {% if perms.pacientes.view_paciente %}{% url 'pacientes:lista' as u %}{% include "inicio/_acceso.html" with url=u texto="Buscar expedientes" %}{% endif %}
+                {% if perms.citas.add_cita %}{% url 'citas:nueva' as u %}{% include "inicio/_acceso.html" with url=u texto="Agendar una cita de control" %}{% endif %}
+                {% if perms.consultas.view_consulta %}{% url 'consultas:lista' as u %}{% if consultas_hoy %}{% with n=consultas_hoy|stringformat:"d" %}{% include "inicio/_acceso.html" with url=u texto="Mis consultas ("|add:n|add:" hoy)" %}{% endwith %}{% else %}{% include "inicio/_acceso.html" with url=u texto="Mis consultas" %}{% endif %}{% endif %}
+                {% if perms.inventario.view_producto %}{% url 'inventario:producto_lista' as u %}{% include "inicio/_acceso.html" with url=u texto="Medicamentos disponibles" %}{% endif %}
+            </ul>
+            <p class="mt-3 text-sm text-slate-500">Para atender a un paciente sin cita, ábralo en «Buscar expedientes» y use «Atender sin cita».</p>
         </section>
     </div>
 </div>

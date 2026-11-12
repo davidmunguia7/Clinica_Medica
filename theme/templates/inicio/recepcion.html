@@ -52,7 +52,7 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">Todavía no hay pacientes registrados.</p>
+            <p class="mt-3 text-slate-600">Todavía no hay pacientes registrados.</p>
             {% endif %}
         </section>
         {% endif %}
@@ -61,35 +61,18 @@
     <div class="min-w-0 space-y-6">
         <section class="tarjeta min-w-0">
             <h2 class="titulo-seccion">Accesos rápidos</h2>
-            <div class="mt-4 space-y-3">
-                {% if perms.pacientes.add_paciente %}
-                <a href="{% url 'pacientes:registrar' %}" class="btn btn-acento w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg>
-                    Registrar paciente
-                </a>
-                {% endif %}
-                {% if perms.citas.add_cita %}
-                <a href="{% url 'citas:nueva' %}" class="btn btn-principal w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>
-                    Agendar cita
-                </a>
-                {% endif %}
-                {% if perms.pacientes.view_paciente %}
-                <a href="{% url 'pacientes:lista' %}" class="btn btn-secundario w-full">Ver lista de pacientes</a>
-                {% endif %}
-                {% if perms.inventario.view_producto %}
-                <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>
-                    Inventario de medicamentos
-                </a>
-                {% endif %}
-                {% if perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_movimiento %}
-                <a href="{% url 'reportes:mensual' %}" class="btn btn-secundario w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-                    Reporte del mes
-                </a>
-                {% endif %}
+            {# Lo que más hace Recepción va como botón; lo demás, como enlaces #}
+            {% if perms.pacientes.add_paciente or perms.citas.add_cita %}
+            <div class="mt-4 grid gap-2">
+                {% if perms.pacientes.add_paciente %}<a href="{% url 'pacientes:registrar' %}" class="btn btn-acento">Registrar paciente</a>{% endif %}
+                {% if perms.citas.add_cita %}<a href="{% url 'citas:nueva' %}" class="btn btn-principal">Agendar cita</a>{% endif %}
             </div>
+            {% endif %}
+            <ul class="mt-2 divide-y divide-slate-100">
+                {% if perms.pacientes.view_paciente %}{% url 'pacientes:lista' as u %}{% include "inicio/_acceso.html" with url=u texto="Lista de pacientes" %}{% endif %}
+                {% if perms.inventario.view_producto %}{% url 'inventario:producto_lista' as u %}{% include "inicio/_acceso.html" with url=u texto="Inventario de medicamentos" %}{% endif %}
+                {% if perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_movimiento %}{% url 'reportes:mensual' as u %}{% include "inicio/_acceso.html" with url=u texto="Reporte del mes" %}{% endif %}
+            </ul>
         </section>
         {% if perms.consultas.entregar_medicamentorecetado %}
         <section class="tarjeta min-w-0">

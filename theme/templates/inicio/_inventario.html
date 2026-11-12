@@ -5,28 +5,28 @@
         <a href="{% url 'inventario:panel' %}" class="enlace shrink-0 whitespace-nowrap text-sm">Ver panel</a>
     </div>
     {% if inventario.total_reabastecer or inventario.lotes_vencidos or inventario.lotes_por_vencer %}
-    <ul class="mt-3 space-y-2 text-sm">
+    <ul class="mt-2 divide-y divide-slate-100 text-sm">
         {% if inventario.lotes_vencidos %}
-        <li class="flex items-center justify-between gap-2 rounded-lg bg-red-50 px-3 py-2 text-red-800">
+        <li class="flex items-center justify-between gap-2 py-2">
             <span>Lote{{ inventario.lotes_vencidos|pluralize }} vencido{{ inventario.lotes_vencidos|pluralize }}</span>
-            <strong class="tabular-nums">{{ inventario.lotes_vencidos }}</strong>
+            <strong class="tabular-nums text-red-700">{{ inventario.lotes_vencidos }}</strong>
         </li>
         {% endif %}
         {% if inventario.lotes_por_vencer %}
-        <li class="flex items-center justify-between gap-2 rounded-lg bg-coral-claro px-3 py-2 text-gris-oscuro">
+        <li class="flex items-center justify-between gap-2 py-2">
             <span>Lote{{ inventario.lotes_por_vencer|pluralize }} por vencer</span>
-            <strong class="tabular-nums">{{ inventario.lotes_por_vencer }}</strong>
+            <strong class="tabular-nums text-coral-oscuro">{{ inventario.lotes_por_vencer }}</strong>
         </li>
         {% endif %}
         {% if inventario.total_reabastecer %}
-        <li class="flex items-center justify-between gap-2 rounded-lg bg-coral-claro px-3 py-2 text-gris-oscuro">
+        <li class="flex items-center justify-between gap-2 py-2">
             <span>Producto{{ inventario.total_reabastecer|pluralize }} por reabastecer</span>
-            <strong class="tabular-nums">{{ inventario.total_reabastecer }}</strong>
+            <strong class="tabular-nums text-coral-oscuro">{{ inventario.total_reabastecer }}</strong>
         </li>
         {% endif %}
     </ul>
     {% if inventario.reabastecer %}
-    <h3 class="mt-4 text-sm font-semibold uppercase tracking-wide text-slate-500">Lo que más falta</h3>
+    <h3 class="mt-4 text-sm font-semibold text-slate-600">Lo que más falta</h3>
     <ul class="mt-1 divide-y divide-slate-100 text-sm">
         {% for producto in inventario.reabastecer %}
         <li>

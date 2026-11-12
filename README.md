@@ -204,9 +204,14 @@ falló. **No fusionen un PR con ❌.**
 
 ### Estilos
 
-Solo la paleta oficial (definida en `theme/static_src/src/styles.css`): `marino` (principal),
-`verde-teal` (secundario), `coral` (acción principal, con texto oscuro), `blanco-humo` (fondo) y
-`gris-oscuro` (texto). Reutilicen los componentes `btn`, `campo`, `tarjeta`, `insignia`, etc.
+Solo la paleta oficial (definida en `theme/static_src/src/styles.css`): `marino` (principal y
+botones), `verde-teal` (enlaces y secundario), `coral` (avisos: por vencer, bajo el mínimo),
+`blanco-humo` (fondo) y `gris-oscuro` (texto). Reutilicen los componentes `btn`, `campo`, `tarjeta`,
+`insignia`, etc.
+
+El estilo es sobrio, de sistema clínico: esquinas poco redondeadas, sin sombras, títulos en
+seminegrita, sin adornos (franjas o círculos de colores) y un solo color de botón (`btn-acento`
+relleno para la acción más importante; las demás con borde).
 
 ---
 

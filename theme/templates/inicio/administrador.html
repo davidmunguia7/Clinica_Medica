@@ -12,9 +12,9 @@
 </div>
 <div class="mt-3 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
     {% for fila in resumen_mes %}
-    <a href="{% url 'reportes:mensual' %}" class="tarjeta p-4 hover:border-verde-teal">
+    <a href="{% url 'reportes:mensual' %}" class="tarjeta p-4 hover:border-marino">
         <p class="text-sm text-slate-600">{{ fila.nombre }}</p>
-        <p class="mt-1 text-3xl font-extrabold text-marino">{% if fila.dinero %}{{ fila.actual|dinero }}{% else %}{{ fila.actual|miles }}{% endif %}</p>
+        <p class="mt-1 text-2xl font-semibold tabular-nums text-gris-oscuro">{% if fila.dinero %}{{ fila.actual|dinero }}{% else %}{{ fila.actual|miles }}{% endif %}</p>
         <p class="mt-1 text-xs text-slate-500">{{ titulo_mes_anterior }}: {% if fila.dinero %}{{ fila.anterior|dinero }}{% else %}{{ fila.anterior|miles }}{% endif %}</p>
     </a>
     {% endfor %}
@@ -66,29 +66,13 @@
     <div class="min-w-0 space-y-6">
         <section class="tarjeta min-w-0">
             <h2 class="titulo-seccion">Accesos rápidos</h2>
-            <div class="mt-4 space-y-3">
-                {% if resumen_mes %}
-                <a href="{% url 'reportes:mensual' %}" class="btn btn-acento w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-                    Reporte del mes
-                </a>
-                {% endif %}
-                {% if perms.usuarios.view_usuario %}
-                <a href="{% url 'usuarios:lista' %}" class="btn btn-principal w-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.3a5 5 0 0 1 5 5.7"/></svg>
-                    Usuarios y roles
-                </a>
-                {% endif %}
-                {% if perms.usuarios.add_usuario and user.is_staff %}
-                <a href="{% url 'admin:usuarios_usuario_add' %}" class="btn btn-secundario w-full">Crear un usuario</a>
-                {% endif %}
-                {% if perms.inventario.view_producto %}
-                <a href="{% url 'inventario:panel' %}" class="btn btn-secundario w-full">Panel del inventario</a>
-                {% endif %}
-                {% if user.is_staff %}
-                <a href="{% url 'admin:index' %}" class="btn btn-secundario w-full">Panel de administración</a>
-                {% endif %}
-            </div>
+            <ul class="mt-2 divide-y divide-slate-100">
+                {% if resumen_mes %}{% url 'reportes:mensual' as u %}{% include "inicio/_acceso.html" with url=u texto="Reporte del mes" %}{% endif %}
+                {% if perms.usuarios.view_usuario %}{% url 'usuarios:lista' as u %}{% include "inicio/_acceso.html" with url=u texto="Usuarios y roles" %}{% endif %}
+                {% if perms.usuarios.add_usuario and user.is_staff %}{% url 'admin:usuarios_usuario_add' as u %}{% include "inicio/_acceso.html" with url=u texto="Crear un usuario" %}{% endif %}
+                {% if perms.inventario.view_producto %}{% url 'inventario:panel' as u %}{% include "inicio/_acceso.html" with url=u texto="Panel del inventario" %}{% endif %}
+                {% if user.is_staff %}{% url 'admin:index' as u %}{% include "inicio/_acceso.html" with url=u texto="Panel de administración" %}{% endif %}
+            </ul>
         </section>
         {% if perms.inventario.view_producto %}
         {% include "inicio/_inventario.html" %}

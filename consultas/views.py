@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -9,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from citas.models import Cita
 from inventario import services
 from inventario.models import Movimiento
+from inventario.templatetags.inventario_extras import dinero
 from pacientes.models import Paciente, normalizar_busqueda
 
 from . import alergias, entregas
@@ -172,6 +175,9 @@ def entregar(request, pk):
     for medicamento in pendientes:
         medicamento.disponible = services.disponible(medicamento.producto)
         medicamento.alcanza = medicamento.disponible >= medicamento.cantidad
+        # Lo que se le cobra si se entrega como venta (el precio del producto; 0 = sin precio)
+        medicamento.precio = medicamento.producto.precio_venta or Decimal("0")
+        medicamento.subtotal = medicamento.precio * medicamento.cantidad
 
     if request.method == "POST":
         concepto = request.POST.get("concepto", "")
@@ -182,10 +188,12 @@ def entregar(request, pk):
             try:
                 with transaction.atomic():
                     entregados = afuera = 0
+                    cobrar = Decimal("0")
                     for medicamento in pendientes:
                         if acciones[medicamento.pk] == "entregar":
                             entregas.entregar(medicamento, usuario=request.user, concepto=concepto)
                             entregados += 1
+                            cobrar += medicamento.subtotal
                         elif acciones[medicamento.pk] == "afuera":
                             entregas.marcar_afuera(medicamento)
                             afuera += 1
@@ -197,12 +205,19 @@ def entregar(request, pk):
                     partes.append(f"{entregados} entregado{'s' if entregados != 1 else ''} y descontado{'s' if entregados != 1 else ''} del inventario")
                 if afuera:
                     partes.append(f"{afuera} lo compra afuera")
-                messages.success(request, ("Listo: " + ", ".join(partes) + ".") if partes else "No se cambió nada.")
+                texto = ("Listo: " + ", ".join(partes) + ".") if partes else "No se cambió nada."
+                if concepto == Movimiento.Concepto.VENTA and cobrar:
+                    texto += f" Cobrar al paciente: {dinero(cobrar)}."
+                messages.success(request, texto)
                 return redirect("consultas:por_entregar")
 
+    venta = Movimiento.Concepto.VENTA
     return render(request, "consultas/entregar.html", {
         "consulta": consulta,
         "pendientes": pendientes,
         "conceptos": entregas.CONCEPTOS_DE_ENTREGA,
-        "concepto_inicial": Movimiento.Concepto.VENTA,
+        "concepto_inicial": venta,
+        "concepto_venta": venta,
+        # Total con lo que viene marcado al abrir (lo que alcanza); la pantalla lo recalcula al cambiar
+        "total_inicial": sum((m.subtotal for m in pendientes if m.alcanza), Decimal("0")),
     })

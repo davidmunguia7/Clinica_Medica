@@ -1,4 +1,5 @@
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -194,6 +195,29 @@ class ConsultasYRecetasTests(TestCase):
             self.assertEqual(str(salida.precio_unitario), "0.25")
         self.assertEqual(services.disponible(self.acetaminofen), 16)
         self.assertNotContains(self.client.get(reverse("consultas:por_entregar")), self.paciente.nombre_completo)
+
+    def test_recepcion_ve_cuanto_cobrar(self):
+        consulta = self.receta_con_acetaminofen(cantidad=10)  # $0.25 c/u
+        medicamento = consulta.medicamentos.get(estado=Estado.POR_ENTREGAR)
+        self.entrar(self.recepcion)
+        pantalla = self.client.get(reverse("consultas:entregar", args=[consulta.pk]))
+        self.assertContains(pantalla, "$0.25 c/u")
+        self.assertEqual(pantalla.context["total_inicial"], Decimal("2.50"))
+        self.assertContains(pantalla, 'data-subtotal="2.50"')  # con punto aunque el sistema esté en español
+        respuesta = self.client.post(reverse("consultas:entregar", args=[consulta.pk]), {
+            f"accion-{medicamento.pk}": "entregar", "concepto": Movimiento.Concepto.VENTA,
+        }, follow=True)
+        self.assertContains(respuesta, "Cobrar al paciente: $2.50.")
+
+    def test_sin_costo_no_dice_que_se_cobre(self):
+        consulta = self.receta_con_acetaminofen(cantidad=10)
+        medicamento = consulta.medicamentos.get(estado=Estado.POR_ENTREGAR)
+        self.entrar(self.recepcion)
+        respuesta = self.client.post(reverse("consultas:entregar", args=[consulta.pk]), {
+            f"accion-{medicamento.pk}": "entregar", "concepto": Movimiento.Concepto.USO_INTERNO,
+        }, follow=True)
+        self.assertContains(respuesta, "1 entregado y descontado del inventario.")
+        self.assertNotContains(respuesta, "Cobrar al paciente")
 
     def test_entrega_sin_costo_queda_como_uso_en_consulta(self):
         consulta = self.receta_con_acetaminofen(cantidad=2)

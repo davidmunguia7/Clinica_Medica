@@ -64,15 +64,17 @@ class EntradaForm(EstiloMixin, forms.Form):
 
 class SalidaForm(EstiloMixin, forms.Form):
     cantidad = forms.IntegerField(min_value=1)
+    # «Vencido o dañado» no va aquí: la salida toma el lote que vence antes y nunca uno vencido,
+    # así que lo que ya no sirve se saca de su lote con «Dar de baja» (BajaForm).
     concepto = forms.ChoiceField(
-        choices=[(c.value, c.label) for c in Movimiento.CONCEPTOS_SALIDA],
+        choices=[(c.value, c.label) for c in Movimiento.CONCEPTOS_SALIDA if c != Movimiento.Concepto.MERMA],
         initial=Movimiento.Concepto.VENTA, required=False,
     )
     precio_unitario = _campo_dinero(
         "Precio de venta por unidad ($)",
         "Solo para ventas. Si lo deja vacío se usa el precio del producto.",
     )
-    motivo = forms.CharField(max_length=200, required=False, help_text="Ej.: entregado a paciente, dañado")
+    motivo = forms.CharField(max_length=200, required=False, help_text="Ej.: entregado a paciente")
 
     def clean_concepto(self):
         return self.cleaned_data.get("concepto") or Movimiento.Concepto.VENTA
@@ -82,3 +84,10 @@ class SalidaForm(EstiloMixin, forms.Form):
         if datos.get("concepto") != Movimiento.Concepto.VENTA:
             datos["precio_unitario"] = None  # no es venta: se usa el costo del lote
         return datos
+
+
+class BajaForm(EstiloMixin, forms.Form):
+    """Dar de baja unidades de un lote vencido o dañado (services.dar_de_baja)."""
+
+    cantidad = forms.IntegerField(label="Cantidad a dar de baja", min_value=1)
+    motivo = forms.CharField(max_length=200, help_text="Ej.: vencido, frasco quebrado, se mojó la caja")

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from usuarios.pruebas import sin_permisos_de_rol
 
+from . import consultas as inventario_consultas
 from . import services
 from .models import Categoria, Lote, Movimiento, Producto
 from .templatetags.inventario_extras import dinero
@@ -283,3 +284,108 @@ class CategoriasYPanelTests(TestCase):
         respuesta = self.client.get(reverse("inventario:panel"))
         self.assertEqual(respuesta.status_code, 302)
         self.assertIn(reverse("login"), respuesta["Location"])
+
+
+class DarDeBajaTests(TestCase):
+    """Lo vencido o dañado se saca de su lote con services.dar_de_baja (queda como merma)."""
+
+    def setUp(self):
+        hoy = timezone.localdate()
+        self.producto = Producto.objects.create(codigo="MED-050", nombre="Amoxicilina 500 mg", stock_minimo=5)
+        services.registrar_entrada(producto=self.producto, numero_lote="VIEJO", cantidad=12,
+                                   costo_unitario=Decimal("0.30"), fecha_vencimiento=hoy - timedelta(days=3))
+        services.registrar_entrada(producto=self.producto, numero_lote="NUEVO", cantidad=20,
+                                   costo_unitario=Decimal("0.35"), fecha_vencimiento=hoy + timedelta(days=200))
+        self.viejo = Lote.objects.get(numero_lote="VIEJO")
+        self.nuevo = Lote.objects.get(numero_lote="NUEVO")
+        self.url = reverse("inventario:baja", args=[self.viejo.pk])
+        Usuario = get_user_model()
+        self.recepcion = Usuario.objects.create_user("recepcion", password="clave-de-prueba-123",
+                                                     rol=Usuario.Rol.RECEPCION)
+        self.medico = Usuario.objects.create_user("medico", password="clave-de-prueba-123",
+                                                  rol=Usuario.Rol.MEDICO)
+
+    def bajas(self):
+        return Movimiento.objects.filter(concepto=Movimiento.Concepto.MERMA)
+
+    def test_saca_un_lote_vencido_de_la_existencia(self):
+        self.assertEqual(self.producto.stock_actual, 32)
+        mov = services.dar_de_baja(lote=self.viejo, cantidad=12, usuario=self.recepcion)
+        self.viejo.refresh_from_db()
+        self.nuevo.refresh_from_db()
+        self.assertEqual((self.viejo.cantidad_actual, self.nuevo.cantidad_actual), (0, 20))
+        self.assertEqual(self.producto.stock_actual, 20)
+        self.assertEqual((mov.tipo, mov.lote, mov.motivo, mov.usuario),
+                         (Movimiento.Tipo.SALIDA, self.viejo, "Vencido", self.recepcion))
+        self.assertEqual(mov.total, Decimal("3.60"))  # a costo: 12 × $0.30
+        # Cuenta como pérdida del mes en el panel (y en el reporte mensual)
+        mes = inventario_consultas.movimientos_del_periodo(inventario_consultas.inicio_del_mes(timezone.localdate()))
+        self.assertEqual((mes["MERMA"]["unidades"], mes["MERMA"]["monto"]), (12, Decimal("3.60")))
+
+    def test_algo_danado_de_un_lote_que_no_ha_vencido(self):
+        mov = services.dar_de_baja(lote=self.nuevo, cantidad=2, motivo="Frasco quebrado")
+        self.nuevo.refresh_from_db()
+        self.assertEqual(self.nuevo.cantidad_actual, 18)
+        self.assertEqual((mov.motivo, mov.precio_unitario), ("Frasco quebrado", Decimal("0.35")))
+
+    def test_no_saca_mas_de_lo_que_hay(self):
+        for cantidad in (0, 13):
+            with self.subTest(cantidad=cantidad), self.assertRaises(ValidationError):
+                services.dar_de_baja(lote=self.viejo, cantidad=cantidad)
+        self.viejo.refresh_from_db()
+        self.assertEqual(self.viejo.cantidad_actual, 12)
+        self.assertFalse(self.bajas().exists())
+
+    def test_desde_la_pantalla_del_producto(self):
+        self.client.force_login(self.recepcion)
+        detalle = reverse("inventario:producto_detalle", args=[self.producto.pk])
+        pagina = self.client.get(detalle)
+        self.assertContains(pagina, f'href="{self.url}"')
+        self.assertContains(pagina, "12 están en lotes vencidos")
+
+        formulario = self.client.get(self.url)
+        self.assertContains(formulario, 'value="12"')  # propone dar de baja todo el lote
+        self.assertContains(formulario, 'value="Vencido"')
+
+        respuesta = self.client.post(self.url, {"cantidad": 12, "motivo": "Vencido"}, follow=True)
+        self.assertRedirects(respuesta, detalle)
+        self.assertContains(respuesta, "Listo: 12 salieron de la existencia (lote VIEJO")
+        self.assertNotContains(respuesta, "en lotes vencidos")
+        self.assertEqual(self.bajas().get().usuario, self.recepcion)
+
+        # El lote ya quedó vacío: no se puede volver a dar de baja
+        self.assertRedirects(self.client.get(self.url), detalle)
+        self.assertEqual(self.bajas().count(), 1)
+
+    def test_avisa_si_se_pide_mas_de_lo_que_tiene_el_lote(self):
+        self.client.force_login(self.recepcion)
+        respuesta = self.client.post(self.url, {"cantidad": 99, "motivo": "Vencido"})
+        self.assertContains(respuesta, "solo tiene 12 en existencia")
+        self.assertFalse(self.bajas().exists())
+
+    def test_la_lista_ofrece_dar_de_baja_lo_vencido(self):
+        self.client.force_login(self.recepcion)
+        self.assertContains(self.client.get(reverse("inventario:producto_lista")), f'href="{self.url}"')
+
+    def test_el_medico_solo_consulta(self):
+        self.client.force_login(self.medico)
+        self.assertNotContains(self.client.get(reverse("inventario:producto_detalle", args=[self.producto.pk])),
+                               f'href="{self.url}"')
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+        self.assertEqual(self.client.post(self.url, {"cantidad": 1, "motivo": "x"}).status_code, 403)
+        self.assertFalse(self.bajas().exists())
+
+    def test_requiere_iniciar_sesion(self):
+        respuesta = self.client.get(self.url)
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(reverse("login"), respuesta["Location"])
+
+    def test_la_salida_normal_ya_no_ofrece_vencido_o_danado(self):
+        # Tomaría el lote que vence antes (uno bueno) en vez del vencido: eso se hace con «Dar de baja»
+        self.client.force_login(self.recepcion)
+        salida = reverse("inventario:salida", args=[self.producto.pk])
+        self.assertNotContains(self.client.get(salida), 'value="MERMA"')
+        respuesta = self.client.post(salida, {"cantidad": 1, "concepto": "MERMA"})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn("concepto", respuesta.context["form"].errors)
+        self.assertFalse(self.bajas().exists())

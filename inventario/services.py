@@ -111,3 +111,27 @@ def registrar_salida(
         )
         pendiente -= tomar
     return movimientos
+
+
+@transaction.atomic
+def dar_de_baja(*, lote, cantidad, usuario=None, motivo=""):
+    """Saca de la existencia unidades de un lote que ya no sirven: vencidas o dañadas.
+
+    A diferencia de registrar_salida, aquí se elige el lote, y es la única forma de sacar un lote
+    vencido. Queda como salida «Vencido o dañado» (merma) con el costo del lote, así cuenta en el
+    panel y en el reporte del mes.
+    """
+    lote = Lote.objects.select_for_update().select_related("producto").get(pk=lote.pk)
+    if cantidad <= 0:
+        raise ValidationError("La cantidad debe ser mayor que cero.")
+    if cantidad > lote.cantidad_actual:
+        raise ValidationError(
+            f"El lote {lote.numero_lote} solo tiene {lote.cantidad_actual} en existencia."
+        )
+    lote.cantidad_actual -= cantidad
+    lote.save(update_fields=["cantidad_actual"])
+    return Movimiento.objects.create(
+        producto=lote.producto, lote=lote, tipo=Movimiento.Tipo.SALIDA,
+        cantidad=cantidad, usuario=usuario, motivo=motivo or ("Vencido" if lote.vencido else ""),
+        concepto=Movimiento.Concepto.MERMA, precio_unitario=lote.costo_unitario,
+    )

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load inventario_extras %}
+{% block title %}Dar de baja · Inventario{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+    <a href="{% url 'inventario:producto_detalle' producto.pk %}" class="enlace text-sm">← Cancelar</a>
+    <h1 class="mt-2 text-3xl font-extrabold text-marino">Dar de baja</h1>
+    <p class="mt-1 mb-6 text-slate-600">{{ producto.nombre }} · lote <span class="font-mono font-semibold">{{ lote.numero_lote }}</span></p>
+
+    <dl class="tarjeta mb-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+        <div>
+            <dt class="text-slate-500">Vence</dt>
+            <dd class="mt-1 font-semibold">
+                {{ lote.fecha_vencimiento|date:"d/m/Y"|default:"No vence" }}
+                {% if lote.vencido %}<span class="insignia ml-1 bg-red-50 px-2 py-0.5 text-xs text-red-700">Vencido</span>{% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="text-slate-500">En existencia</dt>
+            <dd class="mt-1 font-semibold tabular-nums">{{ lote.cantidad_actual }} {{ producto.unidad_medida }}</dd>
+        </div>
+        <div>
+            <dt class="text-slate-500">Costo c/u</dt>
+            <dd class="mt-1 font-semibold tabular-nums">{{ lote.costo_unitario|dinero }}</dd>
+        </div>
+    </dl>
+
+    <p class="mb-4 rounded-lg border border-marino-claro bg-marino-claro px-4 py-3 text-sm text-marino">
+        Para lo vencido o dañado, que ya no se puede entregar. Las unidades salen de la existencia y quedan en el
+        historial como «Vencido o dañado», con su costo; en el panel y en el reporte del mes cuentan como pérdida.
+    </p>
+
+    <form method="post" class="tarjeta">
+        {% csrf_token %}
+        {% include "inventario/_campos.html" %}
+        <button type="submit" class="btn btn-peligro">Dar de baja</button>
+    </form>
+</div>
+{% endblock %}

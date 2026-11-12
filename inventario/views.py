@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from . import consultas, services
-from .forms import EntradaForm, ProductoForm, SalidaForm
+from .forms import BajaForm, EntradaForm, ProductoForm, SalidaForm
 from .models import DIAS_ALERTA_VENCIMIENTO, Categoria, Lote, Movimiento, Producto
 
 # Todas las vistas piden iniciar sesión y el permiso de Django que corresponde
@@ -76,7 +76,9 @@ class ProductoDetailView(PermissionRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["lotes"] = self.object.lotes.filter(cantidad_actual__gt=0)
+        ctx["lotes"] = list(self.object.lotes.filter(cantidad_actual__gt=0))
+        # Las unidades vencidas siguen contando en la existencia hasta que se dan de baja
+        ctx["unidades_vencidas"] = sum(l.cantidad_actual for l in ctx["lotes"] if l.vencido)
         ctx["movimientos"] = self.object.movimientos.select_related("lote", "usuario", "paciente")[:15]
         return ctx
 
@@ -143,6 +145,36 @@ def registrar_entrada(request, pk):
 @permission_required("inventario.add_movimiento", raise_exception=True)
 def registrar_salida(request, pk):
     return _movimiento(request, pk, SalidaForm, Movimiento.Tipo.SALIDA)
+
+
+@login_required
+@permission_required("inventario.add_movimiento", raise_exception=True)
+def dar_de_baja(request, pk):
+    """Saca de la existencia lo vencido o dañado de un lote (queda como merma)."""
+    lote = get_object_or_404(Lote.objects.select_related("producto"), pk=pk)
+    producto = lote.producto
+    if not lote.cantidad_actual:
+        messages.info(request, f"El lote {lote.numero_lote} ya no tiene existencia.")
+        return redirect("inventario:producto_detalle", pk=producto.pk)
+
+    form = BajaForm(request.POST or None, initial={
+        "cantidad": lote.cantidad_actual, "motivo": "Vencido" if lote.vencido else "",
+    })
+    form.fields["cantidad"].widget.attrs["max"] = lote.cantidad_actual
+    if request.method == "POST" and form.is_valid():
+        cantidad = form.cleaned_data["cantidad"]
+        try:
+            services.dar_de_baja(lote=lote, usuario=request.user, **form.cleaned_data)
+        except ValidationError as e:
+            form.add_error("cantidad", e)
+        else:
+            messages.success(
+                request,
+                f"Listo: {cantidad} {'salió' if cantidad == 1 else 'salieron'} de la existencia "
+                f"(lote {lote.numero_lote}, como vencido o dañado).",
+            )
+            return redirect("inventario:producto_detalle", pk=producto.pk)
+    return render(request, "inventario/baja_form.html", {"lote": lote, "producto": producto, "form": form})
 
 
 class MovimientoListView(PermissionRequiredMixin, ListView):

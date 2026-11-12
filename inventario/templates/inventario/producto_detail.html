@@ -39,6 +39,9 @@
         {% else %}
         <p class="mt-1 text-sm text-slate-500">Mínimo: {{ producto.stock_minimo }}</p>
         {% endif %}
+        {% if unidades_vencidas %}
+        <p class="mt-2 text-sm font-medium text-red-700">De estas, {{ unidades_vencidas }} est{{ unidades_vencidas|pluralize:"á,án" }} en lotes vencidos y no se pueden entregar.{% if perms.inventario.add_movimiento %} Use «Dar de baja» en esos lotes para sacarlas de la existencia.{% endif %}</p>
+        {% endif %}
     </div>
     <div class="tarjeta">
         <p class="text-sm text-slate-600">Precio de venta</p>
@@ -60,6 +63,7 @@
                 <th scope="col" class="px-4 py-3">Vence</th>
                 <th scope="col" class="px-4 py-3 text-right">Costo c/u</th>
                 <th scope="col" class="px-4 py-3 text-right">Cantidad</th>
+                {% if perms.inventario.add_movimiento %}<th scope="col" class="px-4 py-3"><span class="sr-only">Acciones</span></th>{% endif %}
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -73,9 +77,15 @@
                 </td>
                 <td class="px-4 py-3 text-right tabular-nums text-slate-600">{{ l.costo_unitario|dinero }}</td>
                 <td class="px-4 py-3 text-right font-semibold tabular-nums">{{ l.cantidad_actual }}</td>
+                {% if perms.inventario.add_movimiento %}
+                <td class="px-4 py-3 text-right">
+                    {# Lo vencido o dañado se saca de su lote (services.dar_de_baja) #}
+                    <a href="{% url 'inventario:baja' l.pk %}" class="btn btn-chico whitespace-nowrap {% if l.vencido %}btn-peligro{% else %}btn-secundario{% endif %}">Dar de baja</a>
+                </td>
+                {% endif %}
             </tr>
             {% empty %}
-            <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">Sin existencias. Registre una entrada para agregar un lote.</td></tr>
+            <tr><td colspan="{% if perms.inventario.add_movimiento %}5{% else %}4{% endif %}" class="px-4 py-8 text-center text-slate-500">Sin existencias. Registre una entrada para agregar un lote.</td></tr>
             {% endfor %}
         </tbody>
     </table>

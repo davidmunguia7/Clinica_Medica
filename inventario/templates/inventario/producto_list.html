@@ -23,7 +23,8 @@
     <h2 id="titulo-alertas" class="mb-2 font-bold text-gris-oscuro">Revisar</h2>
     <ul class="space-y-1 text-gris-oscuro">
         {% for l in lotes_vencidos %}
-        <li><span class="insignia mr-1 bg-red-50 px-2 py-0.5 text-xs text-red-700">Vencido</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }}: {{ l.cantidad_actual }} en existencia, venció el {{ l.fecha_vencimiento|date:"d/m/Y" }}.</li>
+        <li><span class="insignia mr-1 bg-red-50 px-2 py-0.5 text-xs text-red-700">Vencido</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }}: {{ l.cantidad_actual }} en existencia, venció el {{ l.fecha_vencimiento|date:"d/m/Y" }}.
+            {% if perms.inventario.add_movimiento %}<a href="{% url 'inventario:baja' l.pk %}" class="enlace">Dar de baja</a>{% endif %}</li>
         {% endfor %}
         {% for l in lotes_por_vencer %}
         <li><span class="insignia mr-1 bg-white px-2 py-0.5 text-xs text-coral-oscuro">Por vencer</span> {{ l.producto.nombre }}, lote {{ l.numero_lote }} vence el {{ l.fecha_vencimiento|date:"d/m/Y" }} ({{ l.cantidad_actual }} en existencia).</li>

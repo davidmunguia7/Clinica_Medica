@@ -11,7 +11,7 @@ y vacio="texto cuando no hay citas".
     <li>
         <a href="{{ cita.get_absolute_url }}" class="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-blanco-humo">
             <span class="w-24 shrink-0 font-bold text-marino">
-                {% if con_fecha %}<span class="block text-xs font-semibold uppercase tracking-wide text-slate-500">{{ cita.fecha_hora|date:"D j M" }}</span>{% endif %}
+                {% if con_fecha %}<span class="block text-xs font-medium text-slate-500">{{ cita.fecha_hora|date:"D j M"|capfirst }}</span>{% endif %}
                 <span class="block whitespace-nowrap">{{ cita.fecha_hora|hora12 }}</span>
             </span>
             <span class="min-w-0 flex-1">
@@ -25,5 +25,5 @@ y vacio="texto cuando no hay citas".
     {% endfor %}
 </ul>
 {% else %}
-<p class="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">{{ vacio|default:"No hay citas para hoy." }}</p>
+<p class="mt-3 text-slate-600">{{ vacio|default:"No hay citas para hoy." }}</p>
 {% endif %}

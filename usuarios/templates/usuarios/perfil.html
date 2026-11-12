@@ -8,7 +8,6 @@
     <p class="mt-1 text-slate-600">Consulta los datos de tu cuenta en la clínica.</p>
 
     <section class="tarjeta mt-6 overflow-hidden p-0" aria-labelledby="datos-cuenta" style="overflow-wrap: anywhere">
-        <div class="h-2 bg-marino" aria-hidden="true"></div>
         <div class="p-5 sm:p-6">
             {% with nombre=user.get_full_name|default:user.username %}
             <div class="flex items-center gap-4">

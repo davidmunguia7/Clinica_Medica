@@ -8,10 +8,9 @@
 </div>
 
 <div class="tarjeta overflow-hidden p-0">
-    <div class="h-2 bg-verde-teal" aria-hidden="true"></div>
     <div class="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
         <div class="min-w-0">
-            <p class="text-sm font-bold uppercase tracking-wide text-verde-teal-oscuro">Consulta n.° {{ consulta.pk }} · {{ consulta.fecha|date:"l j \d\e F \d\e Y, g:i a"|capfirst }}</p>
+            <p class="text-sm font-medium text-slate-500">Consulta n.° {{ consulta.pk }} · {{ consulta.fecha|date:"l j \d\e F \d\e Y, g:i a"|capfirst }}</p>
             <h1 class="text-3xl font-extrabold text-marino">{{ consulta.paciente.nombre_completo }}</h1>
             <p class="mt-1 text-slate-600">{{ consulta.paciente.edad_texto }} · Expediente {{ consulta.paciente.numero_expediente }} · Atendió {{ consulta.nombre_medico }}</p>
         </div>

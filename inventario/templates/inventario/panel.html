@@ -104,14 +104,14 @@
             <a href="{% url 'inventario:producto_lista' %}?categoria={% if fila.categoria %}{{ fila.categoria.pk }}{% else %}sin{% endif %}" class="enlace mt-auto text-sm">Ver productos →</a>
         </article>
         {% empty %}
-        <p class="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-600 sm:col-span-2 lg:col-span-3">
+        <p class="tarjeta p-6 text-center text-slate-600 sm:col-span-2 lg:col-span-3">
             Todavía no hay productos activos. Agréguelos desde «Ver productos» y elija su categoría.
         </p>
         {% endfor %}
     </div>
 
     {% if categorias_vacias %}
-    <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4">
+    <div class="mt-4 tarjeta p-4">
         <p class="text-sm text-slate-600">Categorías sin productos todavía:</p>
         <div class="mt-2 flex flex-wrap gap-2">
             {% for categoria in categorias_vacias %}

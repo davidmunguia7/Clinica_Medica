@@ -1,0 +1,14 @@
+{# Botones «Mostrar» de los campos de contraseña: <button type="button" data-mostrar-clave="id_del_campo"> #}
+<script>
+    document.querySelectorAll('[data-mostrar-clave]').forEach(function (boton) {
+        var campo = document.getElementById(boton.dataset.mostrarClave);
+        if (!campo) return;
+        boton.addEventListener('click', function () {
+            var mostrar = campo.type === 'password';
+            campo.type = mostrar ? 'text' : 'password';
+            boton.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+            boton.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+            campo.focus();
+        });
+    });
+</script>

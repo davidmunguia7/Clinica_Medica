@@ -30,6 +30,9 @@
                     <dd class="mt-1 font-semibold">{{ user.email|default:"Sin correo registrado" }}</dd>
                 </div>
             </dl>
+            <div class="flex justify-end border-t border-slate-200 pt-4">
+                <a href="{% url 'usuarios:cambiar_clave' %}" class="btn btn-secundario btn-chico">Cambiar mi contraseña</a>
+            </div>
         </div>
     </section>
 </div>

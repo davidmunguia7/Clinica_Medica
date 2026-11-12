@@ -29,8 +29,10 @@
             </a>
 
             {% if user.is_authenticated %}
+            {# Con una contraseña temporal no hay menú: primero tiene que crear la suya (usuarios/middleware.py) #}
+            {% if not user.debe_cambiar_clave %}
             {# En pantallas chicas el menú va en su propia fila y se desliza de lado si no cabe #}
-            <nav class="order-last -mb-3 flex w-full gap-1 overflow-x-auto whitespace-nowrap text-sm font-semibold lg:order-none lg:mb-0 lg:w-auto lg:overflow-visible" aria-label="Menú principal">
+            <navclass="order-last -mb-3 flex w-full gap-1 overflow-x-auto whitespace-nowrap text-sm font-semibold lg:order-none lg:mb-0 lg:w-auto lg:overflow-visible" aria-label="Menú principal">
                 {% if url_inicio %}
                 <a href="{{ url_inicio }}" {% if vista == 'inicio' %}aria-current="page"{% endif %}
                    class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
@@ -70,6 +72,7 @@
                    class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' and vista == 'perfil' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Mi perfil</a>
                 {% endif %}
             </nav>
+            {% endif %}
 
             <div class="ml-auto flex items-center gap-3">
                 {# Las pantallas que ya tienen su propio botón de registrar lo quitan con {% block boton_registrar %}{% endblock %} #}
@@ -78,7 +81,7 @@
                 <a href="{{ url_registrar }}" class="btn btn-acento btn-chico hidden md:inline-flex">+ Registrar paciente</a>
                 {% endif %}
                 {% endblock %}
-                <span class="hidden text-sm text-slate-600 xl:inline">{{ user.get_full_name|default:user.username }}</span>
+                {% include "usuarios/_menu_cuenta.html" %}
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-secundario btn-chico">Salir</button>
@@ -121,6 +124,8 @@
             }
         })();
     </script>
+    {# Aviso antes de cerrar la sesión por inactividad (usuarios/middleware.py) #}
+    {% include "usuarios/_aviso_inactividad.html" %}
     {% endif %}
     {% block scripts %}{% endblock %}
 </body>

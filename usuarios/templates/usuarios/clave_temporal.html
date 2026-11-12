@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Contraseña temporal · Clínica Familiar{% endblock %}
+
+{% block boton_registrar %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-xl">
+    <a href="{% url 'usuarios:lista' %}" class="enlace text-sm">← Usuarios y roles</a>
+    <h1 class="mt-2 text-3xl font-extrabold text-marino">Contraseña temporal</h1>
+    <p class="mt-1 text-slate-600">Para {{ nombre }} · usuario <strong>{{ persona.username }}</strong></p>
+
+    <section class="tarjeta mt-6 text-center">
+        <p class="text-sm font-medium text-slate-600">Su contraseña temporal es</p>
+        <p class="mt-2 select-all break-all font-mono text-3xl font-bold tracking-wider text-marino" id="clave-temporal">{{ clave }}</p>
+        <button type="button" class="btn btn-secundario btn-chico mt-4" data-copiar="clave-temporal">Copiar</button>
+    </section>
+
+    <ol class="mt-6 list-decimal space-y-2 pl-5 text-slate-700">
+        <li><strong>Désela en persona.</strong> No la mande por mensaje ni la deje anotada a la vista.</li>
+        <li>Al entrar con ella, el sistema le pedirá crear su propia contraseña antes de seguir.</li>
+        <li>Si tenía la sesión abierta en otra computadora, ya se cerró.</li>
+        <li>Esta contraseña <strong>no se vuelve a mostrar</strong>. Si se pierde, restablézcala otra vez.</li>
+    </ol>
+
+    <a href="{% url 'usuarios:lista' %}" class="btn btn-principal mt-8">Listo</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('[data-copiar]').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var texto = document.getElementById(boton.dataset.copiar).textContent.trim();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(texto).then(function () { boton.textContent = 'Copiada'; });
+            }
+        });
+    });
+</script>
+{% endblock %}

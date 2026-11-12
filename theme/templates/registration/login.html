@@ -21,10 +21,10 @@
         <h1 class="text-2xl font-bold text-marino">Iniciar sesión</h1>
         <p class="mt-1 text-sm text-slate-600">Ingrese con su usuario y contraseña.</p>
 
-        {% if form.errors %}
-        <div role="alert" class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">
-            Usuario o contraseña incorrectos. Revise que estén bien escritos e intente de nuevo.
-        </div>
+        {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+        <div role="alert" class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">{{ error }}</div>
+        {% endfor %}
         {% elif next and user.is_authenticated %}
         <div role="alert" class="mt-5 rounded-lg border border-coral/40 bg-coral-claro p-3 text-sm font-medium text-gris-oscuro">
             Su usuario no tiene permiso para ver esa página. Inicie sesión con otro usuario.
@@ -35,15 +35,49 @@
             {% csrf_token %}
             <div>
                 <label for="id_username" class="etiqueta">Usuario</label>
-                <input type="text" name="username" id="id_username" class="campo" autocomplete="username" autocapitalize="none" autofocus required value="{{ form.username.value|default:'' }}">
+                <input type="text" name="username" id="id_username" class="campo{% if form.errors %} campo-error{% endif %}" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="150" autofocus required value="{{ form.username.value|default:'' }}">
             </div>
             <div>
                 <label for="id_password" class="etiqueta">Contraseña</label>
-                <input type="password" name="password" id="id_password" class="campo" autocomplete="current-password" required>
+                <div class="relative">
+                    <input type="password" name="password" id="id_password" class="campo pr-24{% if form.errors %} campo-error{% endif %}" autocomplete="current-password" required aria-describedby="aviso-mayusculas">
+                    <button type="button" data-mostrar-clave="id_password" aria-pressed="false"
+                            class="absolute inset-y-1 right-1 rounded-md px-3 text-sm font-semibold text-verde-teal-oscuro hover:bg-verde-teal-claro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal">Mostrar</button>
+                </div>
+                <p id="aviso-mayusculas" class="mt-1 text-sm font-medium text-coral-oscuro" hidden>Tiene activadas las mayúsculas (Bloq Mayús).</p>
             </div>
             <input type="hidden" name="next" value="{{ next }}">
             <button type="submit" class="btn btn-acento w-full">Entrar</button>
         </form>
+
+        <details class="mt-6 rounded-lg border border-slate-200 bg-blanco-humo px-4 py-3 text-sm">
+            <summary class="cursor-pointer font-semibold text-marino">¿Olvidó su contraseña?</summary>
+            <p class="mt-2 text-slate-600">
+                Pida al Administrador de la clínica que se la restablezca. Le dará una contraseña temporal y,
+                al entrar con ella, el sistema le pedirá crear una nueva.
+            </p>
+            <p class="mt-2 text-slate-600">
+                Por seguridad, si la contraseña se escribe mal {{ intentos_permitidos }} veces, el usuario se bloquea
+                {{ minutos_de_bloqueo }} minutos.
+            </p>
+        </details>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% include "usuarios/_mostrar_clave.html" %}
+<script>
+    // Aviso de Bloq Mayús, la causa más común de «contraseña incorrecta»
+    (function () {
+        var clave = document.getElementById('id_password');
+        var aviso = document.getElementById('aviso-mayusculas');
+        function revisar(evento) {
+            if (evento.getModifierState) aviso.hidden = !evento.getModifierState('CapsLock');
+        }
+        clave.addEventListener('keyup', revisar);
+        clave.addEventListener('keydown', revisar);
+        clave.addEventListener('blur', function () { aviso.hidden = true; });
+    })();
+</script>
 {% endblock %}

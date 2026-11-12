@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from usuarios.views import Entrar
+
 from . import views
 
 admin.site.site_header = 'Clínica Familiar · Administración'
@@ -26,7 +28,7 @@ admin.site.index_title = 'Panel de administración'
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
-    path('cuentas/entrar/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
+    path('cuentas/entrar/', Entrar.as_view(), name='login'),
     path('cuentas/salir/', auth_views.LogoutView.as_view(), name='logout'),
     path('cuentas/', include('usuarios.urls')),
     path('admin/', admin.site.urls),

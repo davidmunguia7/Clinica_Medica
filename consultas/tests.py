@@ -13,6 +13,7 @@ from pacientes.tests import DUI_1, crear_paciente
 from sistema_clinico.cifrado import PREFIJO_FERNET
 
 from . import alergias, entregas
+from .forms import FILAS_EN_BLANCO
 from .models import Consulta, MedicamentoRecetado
 
 User = get_user_model()
@@ -97,7 +98,8 @@ class ConsultasYRecetasTests(TestCase):
         self.entrar(self.medica)
         formulario = self.client.get(reverse("consultas:atender", args=[self.cita.pk]))
         self.assertContains(formulario, "Alergia a la penicilina")  # las alergias a la vista
-        self.assertContains(formulario, "Acetaminofén · tableta 500 mg (hay 76 tableta)")
+        # Lo que se puede entregar: 6 + 20 (el lote vencido de 50 no cuenta)
+        self.assertContains(formulario, "Acetaminofén · tableta 500 mg (hay 26 tableta)")
         self.assertEqual(formulario.context["form"]["motivo"].value(), "Fiebre")  # viene de la cita
 
         consulta = self.receta_con_acetaminofen()
@@ -113,6 +115,20 @@ class ConsultasYRecetasTests(TestCase):
         # Recetar NO descuenta: se descuenta al entregar
         self.assertEqual(services.disponible(self.acetaminofen), 26)
         self.assertFalse(Movimiento.objects.filter(tipo=Movimiento.Tipo.SALIDA).exists())
+
+    def test_receta_sencilla_y_sin_perder_lo_escrito(self):
+        self.entrar(self.medica)
+        formulario = self.client.get(reverse("consultas:atender", args=[self.cita.pk]))
+        # Filas para varios medicamentos, pero en la pantalla se ve una y las demás con el botón
+        self.assertEqual(len(formulario.context["formset"].forms), FILAS_EN_BLANCO)
+        self.assertContains(formulario, "+ Agregar otro medicamento")
+        self.assertNotContains(formulario, "data-medicamento data-con-datos")  # (el script también nombra el atributo)
+        # Si la sesión se cierra a medio escribir, lo escrito se recupera al volver a entrar
+        self.assertContains(formulario, "data-borrador")
+        self.assertContains(formulario, "borrador:")
+        # Una fila con error queda a la vista para corregirla
+        respuesta = self.atender([{"dosis": "1 tableta", "frecuencia": "cada 8 horas"}])
+        self.assertContains(respuesta, "data-medicamento data-con-datos", count=1)
 
     def test_volver_a_atender_abre_la_consulta_que_ya_existe(self):
         consulta = self.receta_con_acetaminofen()

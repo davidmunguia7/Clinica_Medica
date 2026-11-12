@@ -1,14 +1,16 @@
 from django import forms
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 
 from inventario.models import Producto
 from pacientes.forms import EstilosTailwindMixin
 
 from .models import Consulta, MedicamentoRecetado
 
-# Filas en blanco para recetar (las que se dejan vacías no se guardan)
-FILAS_EN_BLANCO = 4
+# Filas en blanco para recetar (las que se dejan vacías no se guardan). En la pantalla se ve una
+# sola y las demás aparecen con «+ Agregar otro medicamento» (consultas/formulario.html).
+FILAS_EN_BLANCO = 6
 
 
 class ConsultaForm(EstilosTailwindMixin, forms.ModelForm):
@@ -60,10 +62,15 @@ class MedicamentoForm(EstilosTailwindMixin, forms.ModelForm):
 
 
 def productos_para_recetar():
-    """Medicamentos e insumos activos, con lo que hay en existencia (para mostrarlo al recetar)."""
+    """Medicamentos e insumos activos, con lo que se puede entregar (para mostrarlo al recetar).
+
+    No cuenta los lotes vencidos: esos no se entregan (inventario.services.disponible).
+    """
+    hoy = timezone.localdate()
+    sin_vencer = Q(lotes__fecha_vencimiento__isnull=True) | Q(lotes__fecha_vencimiento__gte=hoy)
     return (
         Producto.objects.filter(activo=True)
-        .annotate(existencia=Coalesce(Sum("lotes__cantidad_actual"), 0))
+        .annotate(existencia=Coalesce(Sum("lotes__cantidad_actual", filter=sin_vencer), 0))
         .order_by("nombre")
     )
 

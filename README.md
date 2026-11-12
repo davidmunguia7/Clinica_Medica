@@ -10,6 +10,7 @@ en un solo lugar. Proyecto de equipo de Programación II.
 | Módulo | Carpeta | Qué hace | Responsable |
 |---|---|---|---|
 | Usuarios y roles | `usuarios/` | Usuario con rol (Administrador, Médico, Recepción), permisos por rol, «Usuarios y roles» y «Mi perfil» | Adriana |
+| Inicio de sesión | `usuarios/` | Entrar y salir, bloqueo por intentos fallidos, cierre por inactividad, contraseñas temporales y bitácora de accesos | David |
 | Pacientes | `pacientes/` | Registro según la norma del MINSAL, expediente único, historial clínico | Fer |
 | Inventario | `inventario/` | Productos, lotes con vencimiento, entradas y salidas, panel por categorías | David |
 | Citas | `citas/` | Agenda por día y semana, estados de la cita, recordatorios por SMS | Por asignar |
@@ -22,7 +23,7 @@ Además:
   cifrado de datos (`cifrado.py`).
 - `theme/`: diseño compartido. La plantilla base (`templates/base.html`), el login, la paleta de
   colores y los estilos de Tailwind.
-- `docs/`: documentación de [seguridad (Fernet y TDE)](docs/seguridad.md) y de
+- `docs/`: documentación de [seguridad (Fernet, TDE y acceso al sistema)](docs/seguridad.md) y de
   [recordatorios por SMS](docs/recordatorios.md).
 
 ## Tecnología
@@ -95,8 +96,13 @@ El orden importa: **primero la clave de cifrado, después `migrate`**.
 Abre **http://127.0.0.1:8000/** y entra con tu usuario. Para apagarlo: `Ctrl + C` en la terminal.
 
 - Usuarios y roles (solo Administrador): http://127.0.0.1:8000/cuentas/usuarios/
+- Bitácora de accesos (solo Administrador): http://127.0.0.1:8000/cuentas/accesos/
 - Panel de administración (crear usuarios y asignarles su rol): http://127.0.0.1:8000/admin/
 - Panel de inventario por categorías: http://127.0.0.1:8000/inventario/panel/
+
+> Usamos `.\venv\Scripts\python.exe` para no tener que activar el entorno virtual. Si prefieres
+> activarlo (`venv\Scripts\activate`), la línea debe empezar con `(venv)` y después basta con
+> `python manage.py ...`.
 
 ## Roles
 
@@ -108,6 +114,33 @@ rol llega a **su propia pantalla de inicio**:
 | **Administrador** | Todo lo de Recepción, más leer las consultas, crear usuarios, asignar roles y entrar al panel de administración | Números del mes, el equipo con sus roles, citas de hoy y avisos del inventario |
 | **Médico** | Atiende: consulta, diagnóstico y receta. Ve y actualiza expedientes y lleva su agenda. El inventario solo lo consulta; no registra pacientes nuevos | Solo **sus** citas, el siguiente paciente con sus **alergias** y el botón **Atender** |
 | **Recepción** | Registra pacientes, maneja la agenda y el inventario y **entrega lo recetado** (ve la receta, no el diagnóstico) | Citas de hoy de todos los médicos, **recetas por entregar**, pacientes recién registrados y avisos del inventario |
+
+- **Dónde se decide:** en `usuarios/roles.py` (`PERMISOS_POR_ROL`). Para darle o quitarle algo a
+  un rol se cambia ese archivo y nada más; no hay que correr comandos.
+- **Crear un usuario:** en el panel de administración → **Usuarios** → **Añadir**: se elige su rol y
+  una contraseña temporal. Al entrar por primera vez, el sistema le pide crear la suya.
+  Para que alguien deje de entrar, se le quita «Activo» (no se borra).
+- **`createsuperuser`** crea usuarios con rol Administrador.
+- La tabla completa de qué puede hacer cada rol está en la pantalla **Usuarios y roles**.
+- **Pruebas:** si una prueba necesita un usuario *sin* los permisos de su rol, se marca con
+  `@sin_permisos_de_rol()` (de `usuarios/pruebas.py`).
+
+## Inicio de sesión
+
+Todas las pantallas piden entrar con usuario y contraseña (http://127.0.0.1:8000/cuentas/entrar/).
+Al entrar, cada quien llega a la pantalla de inicio de su rol.
+
+- **5 intentos fallidos** en 15 minutos bloquean ese usuario **15 minutos** (ni la contraseña correcta
+  sirve mientras tanto). El Administrador puede quitar el bloqueo antes en **Usuarios y roles → Desbloquear**.
+- **30 minutos sin usar el sistema** cierran la sesión. Dos minutos antes aparece un aviso para seguir;
+  si la persona está escribiendo, no se cierra. También se cierra al cerrar el navegador.
+- **¿Olvidó su contraseña?** El Administrador, en **Usuarios y roles → Restablecer contraseña**, le da
+  una temporal. Al entrar con ella, el sistema le pide crear la suya antes de hacer cualquier otra cosa.
+- **Cambiar mi contraseña:** en el círculo con las iniciales, arriba a la derecha.
+- **Bitácora de accesos** (solo Administrador): quién entró y salió, los intentos fallidos, los bloqueos
+  y los cambios de contraseña. Está en **Usuarios y roles → Bitácora de accesos**.
+
+Más detalles, y cómo responder preguntas de seguridad, en [docs/seguridad.md](docs/seguridad.md).
 
 ## Consultas y recetas
 
@@ -124,19 +157,6 @@ rol llega a **su propia pantalla de inicio**:
    que lo compra afuera.
 
 La consulta, el diagnóstico y la receta se guardan **cifrados**, como el resto de los datos de salud.
-
-- **Dónde se decide:** en `usuarios/roles.py` (`PERMISOS_POR_ROL`). Para darle o quitarle algo a
-  un rol se cambia ese archivo y nada más; no hay que correr comandos.
-- **Crear un usuario:** en el panel de administración → **Usuarios** → **Añadir**, y se elige su rol.
-  Para que alguien deje de entrar, se le quita «Activo» (no se borra).
-- **`createsuperuser`** crea usuarios con rol Administrador.
-- La tabla completa de qué puede hacer cada rol está en la pantalla **Usuarios y roles**.
-- **Pruebas:** si una prueba necesita un usuario *sin* los permisos de su rol, se marca con
-  `@sin_permisos_de_rol()` (de `usuarios/pruebas.py`).
-
-> Usamos `.\venv\Scripts\python.exe` para no tener que activar el entorno virtual. Si prefieres
-> activarlo (`venv\Scripts\activate`), la línea debe empezar con `(venv)` y después basta con
-> `python manage.py ...`.
 
 ## Después de cada `git pull`
 
@@ -215,3 +235,5 @@ Solo la paleta oficial (definida en `theme/static_src/src/styles.css`): `marino`
 | `InconsistentMigrationHistory` al migrar | La base se creó antes del modelo de usuario. Borra la base en SSMS, créala vacía de nuevo y vuelve a correr `migrate`. |
 | `No se pudo descifrar un dato guardado` | La `CLAVE_CIFRADO` del `.env` no es la misma con la que se cifraron los datos. Recupera la clave de tu copia. |
 | Las pantallas se ven sin estilos | Corre `manage.py tailwind build`. |
+| «Este usuario está bloqueado» | Se escribió mal la contraseña 5 veces. Espera 15 minutos o pide al Administrador que lo desbloquee en «Usuarios y roles». |
+| Se olvidó la contraseña del Administrador | `manage.py changepassword <usuario>` (los demás usuarios: «Restablecer contraseña» en «Usuarios y roles»). |

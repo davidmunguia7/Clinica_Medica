@@ -1,0 +1,59 @@
+{% comment %}
+Sesión por inactividad (usuarios/middleware.py · CierrePorInactividad), desde base.html.
+- Mientras la persona usa la pantalla (escribe, hace clic), cada pocos minutos se avisa al
+  servidor que sigue ahí, para no perder una consulta larga a medio escribir.
+- Si no la usa, dos minutos antes del cierre aparece este aviso; al llegar a cero la página se
+  recarga y el sistema pide entrar de nuevo.
+{% endcomment %}
+<div id="aviso-inactividad" hidden role="alertdialog" aria-labelledby="aviso-inactividad-titulo" aria-describedby="aviso-inactividad-texto"
+     class="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-2xl border border-coral/40 bg-white p-5 shadow-xl print:hidden">
+    <p id="aviso-inactividad-titulo" class="text-lg font-bold text-marino">¿Sigue ahí?</p>
+    <p id="aviso-inactividad-texto" class="mt-1 text-sm text-slate-600">
+        Por seguridad, su sesión se cerrará en <strong class="tabular-nums text-gris-oscuro" data-cuenta>2:00</strong> si no usa el sistema.
+    </p>
+    <div class="mt-4 flex justify-end">
+        <button type="button" class="btn btn-acento btn-chico" data-seguir>Seguir en el sistema</button>
+    </div>
+</div>
+<script>
+    (function () {
+        var LIMITE = {{ request.segundos_de_inactividad|default:1800 }} * 1000;
+        var AVISO = Math.min(2 * 60 * 1000, LIMITE / 2);
+        var CADA = Math.min(5 * 60 * 1000, LIMITE / 3);   // cada cuánto se avisa al servidor si se está usando
+        var url = '{% url "usuarios:sigo_aqui" %}';
+        var token = document.querySelector('[name=csrfmiddlewaretoken]');
+        var caja = document.getElementById('aviso-inactividad');
+        var cuenta = caja.querySelector('[data-cuenta]');
+        var ultimoContacto = Date.now();   // la última vez que el servidor supo de nosotros
+        var ultimoUso = Date.now();
+
+        function avisarAlServidor() {
+            ultimoContacto = Date.now();
+            caja.hidden = true;
+            fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': token ? token.value : ''}})
+                .then(function (respuesta) { if (respuesta.status !== 204) window.location.reload(); });
+        }
+
+        ['keydown', 'pointerdown', 'input', 'wheel', 'touchstart'].forEach(function (evento) {
+            document.addEventListener(evento, function () { ultimoUso = Date.now(); }, {capture: true, passive: true});
+        });
+        caja.querySelector('[data-seguir]').addEventListener('click', avisarAlServidor);
+
+        setInterval(function () {
+            var ahora = Date.now();
+            if (ultimoUso > ultimoContacto && ahora - ultimoContacto >= Math.min(CADA, LIMITE - AVISO)) {
+                avisarAlServidor();
+                return;
+            }
+            var queda = LIMITE - (ahora - ultimoContacto);
+            if (queda <= -5000) {
+                // Unos segundos de margen para que el servidor ya la haya cerrado
+                window.location.assign(window.location.pathname + window.location.search);
+            } else if (queda <= AVISO) {
+                var segundos = Math.max(0, Math.ceil(queda / 1000));
+                cuenta.textContent = Math.floor(segundos / 60) + ':' + String(segundos % 60).padStart(2, '0');
+                if (caja.hidden) { caja.hidden = false; caja.querySelector('[data-seguir]').focus(); }
+            }
+        }, 1000);
+    })();
+</script>

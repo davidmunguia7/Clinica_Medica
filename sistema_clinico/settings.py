@@ -68,6 +68,9 @@ MIDDLEWARE = [
     # Todas las páginas piden iniciar sesión, menos la de entrar (Django 5.1 o más nuevo).
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    # Cierra la sesión tras unos minutos sin usar el sistema y obliga a cambiar una contraseña temporal
+    'usuarios.middleware.CierrePorInactividad',
+    'usuarios.middleware.CambioDeClaveObligatorio',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -153,11 +156,15 @@ TAILWIND_APP_NAME = 'theme'
 TAILWIND_STANDALONE_BINARY_VERSION = 'v4.3.0'
 INTERNAL_IPS = ['127.0.0.1']
 
-# Inicio de sesión con la pantalla propia de la clínica.
-# El módulo de login con roles (HU-05) puede ampliar o reemplazar estas vistas.
+# Inicio de sesión con la pantalla propia de la clínica (usuarios/views.py · Entrar).
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'inicio'
 LOGOUT_REDIRECT_URL = 'login'
+
+# La sesión se cierra al cerrar el navegador y tras estos minutos sin usar el sistema
+# (usuarios/middleware.py). Los intentos fallidos y el bloqueo están en usuarios/accesos.py.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESION_MINUTOS_DE_INACTIVIDAD = 30
 
 
 # Email
@@ -171,9 +178,11 @@ MAILERS = {
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
-# Quién puede qué: primero lo normal de Django (usuario, contraseña y permisos sueltos)
-# y después los permisos del rol de cada usuario (usuarios/roles.py).
+# Quién entra y quién puede qué: primero el bloqueo por intentos fallidos (usuarios/accesos.py),
+# después lo normal de Django (usuario, contraseña y permisos sueltos) y al final los permisos
+# del rol de cada usuario (usuarios/roles.py).
 AUTHENTICATION_BACKENDS = [
+    'usuarios.backends.BloqueoPorIntentos',
     'django.contrib.auth.backends.ModelBackend',
     'usuarios.backends.PermisosPorRol',
 ]

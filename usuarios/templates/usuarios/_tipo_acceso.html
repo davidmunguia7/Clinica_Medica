@@ -1,0 +1,4 @@
+{# Insignia de un evento de la bitácora. Uso: {% include "usuarios/_tipo_acceso.html" with acceso=a %} #}
+{% with t=acceso.tipo %}
+<span class="insignia whitespace-nowrap px-2.5 py-0.5 text-xs {% if t == 'ENTRADA' %}bg-verde-teal-claro text-verde-teal-oscuro{% elif t == 'FALLIDO' %}bg-coral-claro text-coral-oscuro{% elif t == 'BLOQUEO' or t == 'INTENTO_BLOQUEADO' %}bg-red-50 text-red-800{% elif t == 'SALIDA' or t == 'INACTIVIDAD' %}bg-slate-100 text-slate-600{% else %}bg-marino-claro text-marino{% endif %}">{{ acceso.get_tipo_display }}</span>
+{% endwith %}

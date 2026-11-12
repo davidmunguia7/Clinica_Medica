@@ -46,12 +46,13 @@ _MEDICO = (
     | permisos("consultas", "medicamentorecetado", VER, CREAR, EDITAR)
 )
 
-# Administrador: todo lo de Recepción, más los usuarios y el panel de administración.
+# Administrador: todo lo de Recepción, más los usuarios, la bitácora de accesos y el panel de administración.
 # Puede leer las consultas, pero no las escribe (eso es del médico).
 _ADMINISTRADOR = (
     _RECEPCION
     | permisos("consultas", "consulta", VER)
     | permisos("usuarios", "usuario", VER, CREAR, EDITAR)
+    | permisos("usuarios", "acceso", VER)  # bitácora de accesos
     # Para revisar todo desde el panel de administración (/admin/):
     | permisos("pacientes", "historialclinico", VER, EDITAR)
     | permisos("pacientes", "departamento", VER)
@@ -106,6 +107,8 @@ CAPACIDADES = [
     ("Administración", [
         ("Ver los usuarios y sus roles", "usuarios.view_usuario"),
         ("Crear usuarios, asignar roles y entrar al panel de administración", "usuarios.change_usuario"),
+        ("Restablecer contraseñas olvidadas y desbloquear usuarios", "usuarios.change_usuario"),
+        ("Ver la bitácora de accesos: quién entró y los intentos fallidos", "usuarios.view_acceso"),
     ]),
 ]
 

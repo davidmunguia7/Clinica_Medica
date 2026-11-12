@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Cambiar mi contraseña · Clínica Familiar{% endblock %}
+
+{% block boton_registrar %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-xl">
+    <h1 class="text-3xl font-extrabold text-marino">{% if obligatorio %}Cree su contraseña{% else %}Cambiar mi contraseña{% endif %}</h1>
+    <p class="mt-1 text-slate-600">{{ user.get_full_name|default:user.username }} · usuario <strong>{{ user.username }}</strong> · {{ user.get_rol_display }}</p>
+
+    {% if obligatorio %}
+    <div role="alert" class="mt-5 rounded-lg border border-coral/40 bg-coral-claro p-4 text-sm text-gris-oscuro">
+        <p class="font-semibold">Antes de seguir, cree su propia contraseña.</p>
+        <p class="mt-1">Entró con una contraseña temporal que le dio el Administrador. Escríbala en «Contraseña actual» y elija una nueva que solo usted conozca.</p>
+    </div>
+    {% endif %}
+
+    <form method="post" class="tarjeta mt-6 space-y-5" novalidate>
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}
+        <div role="alert" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">{{ error }}</div>
+        {% endfor %}
+
+        {% for campo in form %}
+        <div>
+            <label for="{{ campo.id_for_label }}" class="etiqueta">{{ campo.label }}</label>
+            <div class="relative">
+                {{ campo }}
+                <button type="button" data-mostrar-clave="{{ campo.id_for_label }}" aria-pressed="false"
+                        class="absolute inset-y-1 right-1 rounded-md px-3 text-sm font-semibold text-verde-teal-oscuro hover:bg-verde-teal-claro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal">Mostrar</button>
+            </div>
+            {% for error in campo.errors %}
+            <p class="mt-1 text-sm font-medium text-red-700">{{ error }}</p>
+            {% endfor %}
+            {% if campo.name == "new_password1" %}
+            <ul class="mt-2 list-disc space-y-0.5 pl-5 text-sm text-slate-600">
+                {% for requisito in requisitos %}<li>{{ requisito }}</li>{% endfor %}
+                <li>Distinta de la actual.</li>
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-5">
+            {% if obligatorio %}
+            <button type="submit" form="salir" class="btn btn-secundario">Salir</button>
+            {% else %}
+            <a href="{% url 'inicio' %}" class="btn btn-secundario">Cancelar</a>
+            {% endif %}
+            <button type="submit" class="btn btn-acento">Guardar contraseña</button>
+        </div>
+    </form>
+    <form method="post" action="{% url 'logout' %}" id="salir" hidden>{% csrf_token %}</form>
+
+    <p class="mt-4 text-sm text-slate-500">Al cambiarla, si tenía la sesión abierta en otra computadora, ahí se cierra sola.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "usuarios/_mostrar_clave.html" %}
+{% endblock %}

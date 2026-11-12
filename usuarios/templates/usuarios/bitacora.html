@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Bitácora de accesos · Clínica Familiar{% endblock %}
+
+{% block boton_registrar %}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'usuarios:lista' %}" class="enlace text-sm">← Usuarios y roles</a>
+    <h1 class="mt-2 text-3xl font-extrabold text-marino">Bitácora de accesos</h1>
+    <p class="mt-1 text-slate-600">Quién entró al sistema, los intentos fallidos y los cambios de contraseña. Nadie la puede editar ni borrar.</p>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-3">
+    <section class="tarjeta">
+        <p class="text-sm font-medium text-slate-600">Entradas hoy</p>
+        <p class="mt-1 text-3xl font-extrabold tabular-nums text-marino">{{ entradas_hoy }}</p>
+    </section>
+    <section class="tarjeta">
+        <p class="text-sm font-medium text-slate-600">Intentos fallidos hoy</p>
+        <p class="mt-1 text-3xl font-extrabold tabular-nums {% if fallidos_hoy %}text-coral-oscuro{% else %}text-marino{% endif %}">{{ fallidos_hoy }}</p>
+    </section>
+    <section class="tarjeta">
+        <p class="text-sm font-medium text-slate-600">Usuarios bloqueados ahora</p>
+        <p class="mt-1 text-3xl font-extrabold tabular-nums {% if bloqueados_ahora %}text-red-700{% else %}text-marino{% endif %}">{{ bloqueados_ahora }}</p>
+    </section>
+</div>
+
+<form method="get" class="mt-6 flex flex-wrap items-end gap-3" role="search">
+    <div class="min-w-48 flex-1">
+        <label for="q" class="etiqueta">Usuario o nombre</label>
+        <input type="search" name="q" id="q" value="{{ q }}" class="campo" placeholder="Ej.: dra.lopez">
+    </div>
+    <div class="min-w-48">
+        <label for="tipo" class="etiqueta">Qué pasó</label>
+        <select name="tipo" id="tipo" class="campo">
+            <option value="">Todo</option>
+            {% for valor, texto in tipos %}
+            <option value="{{ valor }}" {% if valor == tipo %}selected{% endif %}>{{ texto }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-principal">Buscar</button>
+    {% if q or tipo %}<a href="{% url 'usuarios:bitacora' %}" class="btn btn-secundario">Quitar filtros</a>{% endif %}
+</form>
+
+{% if pagina.object_list %}
+<div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-marino-claro text-xs font-bold uppercase tracking-wide text-marino">
+            <tr>
+                <th scope="col" class="px-4 py-3">Fecha y hora</th>
+                <th scope="col" class="px-4 py-3">Usuario</th>
+                <th scope="col" class="px-4 py-3">Qué pasó</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">Equipo (IP)</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for a in pagina %}
+            <tr class="hover:bg-blanco-humo">
+                <td class="whitespace-nowrap px-4 py-3 tabular-nums text-slate-600">{{ a.momento|date:"d/m/Y H:i:s" }}</td>
+                <td class="px-4 py-3">
+                    {% if a.usuario %}
+                    <span class="block font-semibold text-marino">{{ a.usuario.get_full_name|default:a.usuario.username }}</span>
+                    <span class="block text-xs text-slate-500">{{ a.nombre_usuario }}</span>
+                    {% else %}
+                    <span class="block font-semibold text-slate-600">{{ a.nombre_usuario }}</span>
+                    <span class="block text-xs text-slate-500">No existe ese usuario</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">
+                    {% include "usuarios/_tipo_acceso.html" with acceso=a %}
+                    {% if a.hecho_por %}<span class="mt-1 block text-xs text-slate-500">por {{ a.hecho_por.get_full_name|default:a.hecho_por.username }}</span>{% endif %}
+                </td>
+                <td class="hidden px-4 py-3 tabular-nums text-slate-600 md:table-cell">{{ a.ip|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if pagina.has_other_pages %}
+<nav class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm" aria-label="Páginas">
+    <span class="text-slate-600">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} · {{ pagina.paginator.count }} registros</span>
+    <span class="flex gap-2">
+        {% if pagina.has_previous %}<a class="btn btn-secundario btn-chico" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}{% if tipo %}tipo={{ tipo }}&amp;{% endif %}pagina={{ pagina.previous_page_number }}">← Más recientes</a>{% endif %}
+        {% if pagina.has_next %}<a class="btn btn-secundario btn-chico" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}{% if tipo %}tipo={{ tipo }}&amp;{% endif %}pagina={{ pagina.next_page_number }}">Más antiguos →</a>{% endif %}
+    </span>
+</nav>
+{% endif %}
+{% else %}
+<div class="mt-4 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+    <p class="text-lg font-semibold text-marino">No hay registros{% if q or tipo %} con esos filtros{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,10 +1,10 @@
 {# Menú de la cuenta en el encabezado (base.html): quién está usando el sistema y «Cambiar mi contraseña» #}
 {% with nombre=user.get_full_name|default:user.username %}
 <details class="relative" data-menu-cuenta>
-    <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full text-sm font-medium text-slate-600 hover:text-marino focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal [&::-webkit-details-marker]:hidden">
-        <span class="avatar h-9 w-9 text-xs" aria-hidden="true">{{ user.iniciales }}</span>
-        <span class="hidden xl:inline">{{ nombre }}</span>
-        <span class="sr-only">Mi cuenta</span>
+    {# Solo el círculo con las iniciales: el nombre no cabe junto al menú del Administrador y se ve al abrirlo #}
+    <summary title="{{ nombre }} · Mi cuenta" class="flex cursor-pointer list-none items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal [&::-webkit-details-marker]:hidden">
+        <span class="avatar h-9 w-9 text-xs transition hover:ring-2 hover:ring-verde-teal/40" aria-hidden="true">{{ user.iniciales }}</span>
+        <span class="sr-only">Mi cuenta: {{ nombre }}</span>
     </summary>
     <div class="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 text-sm shadow-lg">
         <div class="border-b border-slate-100 px-3 pb-2 pt-1">

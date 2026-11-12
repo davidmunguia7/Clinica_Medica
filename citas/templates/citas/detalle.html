@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load citas_extras %}
+{% load citas_extras consultas_extras %}
 
 {% block title %}Cita de {{ cita.paciente.nombre_completo }} · Clínica Familiar{% endblock %}
 
@@ -22,6 +22,12 @@
             </div>
         </div>
         <div class="flex flex-wrap gap-2">
+            {% consulta_de_la_cita cita as consulta %}
+            {% if consulta and perms.consultas.view_consulta %}
+            <a href="{{ consulta.get_absolute_url }}" class="btn btn-acento">Ver la consulta</a>
+            {% elif not consulta and perms.consultas.add_consulta %}{% if cita.activa or cita.estado == 'ATENDIDA' %}
+            <a href="{% url 'consultas:atender' cita.pk %}" class="btn btn-acento">Atender</a>
+            {% endif %}{% endif %}
             {% if cita.activa and perms.citas.change_cita %}
             <a href="{% url 'citas:editar' cita.pk %}" class="btn btn-principal">Cambiar fecha o datos</a>
             {% endif %}

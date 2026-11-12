@@ -47,10 +47,25 @@ def registrar_entrada(
     )
 
 
+def _lotes_utilizables(producto):
+    """Lotes con existencia que no han vencido, empezando por el que vence primero."""
+    hoy = timezone.localdate()
+    return (
+        Lote.objects.filter(producto=producto, cantidad_actual__gt=0)
+        .filter(Q(fecha_vencimiento__isnull=True) | Q(fecha_vencimiento__gte=hoy))
+        .order_by(F("fecha_vencimiento").asc(nulls_last=True), "fecha_ingreso")
+    )
+
+
+def disponible(producto):
+    """Unidades que se pueden entregar hoy (sin contar lotes vencidos)."""
+    return sum(lote.cantidad_actual for lote in _lotes_utilizables(producto))
+
+
 @transaction.atomic
 def registrar_salida(
     *, producto, cantidad, usuario=None, motivo="",
-    concepto=Movimiento.Concepto.VENTA, precio_unitario=None,
+    concepto=Movimiento.Concepto.VENTA, precio_unitario=None, paciente=None,
 ):
     """Descuenta stock empezando por el lote que vence primero (FEFO).
 
@@ -60,6 +75,7 @@ def registrar_salida(
     En una venta se guarda el precio de venta (si no se indica, el del producto;
     si el producto tampoco tiene precio, la venta queda sin precio).
     En uso en consulta, merma o ajuste se guarda el costo de cada lote.
+    paciente: a quién se le entregó (por ejemplo, el de una receta médica).
     """
     if cantidad <= 0:
         raise ValidationError("La cantidad debe ser mayor que cero.")
@@ -68,13 +84,7 @@ def registrar_salida(
     if concepto == Movimiento.Concepto.VENTA and precio_unitario is None:
         precio_unitario = producto.precio_venta or None  # 0 = todavía no tiene precio
 
-    hoy = timezone.localdate()
-    lotes = list(
-        Lote.objects.select_for_update()
-        .filter(producto=producto, cantidad_actual__gt=0)
-        .filter(Q(fecha_vencimiento__isnull=True) | Q(fecha_vencimiento__gte=hoy))
-        .order_by(F("fecha_vencimiento").asc(nulls_last=True), "fecha_ingreso")
-    )
+    lotes = list(_lotes_utilizables(producto).select_for_update())
 
     disponible = sum(l.cantidad_actual for l in lotes)
     if disponible < cantidad:
@@ -96,7 +106,7 @@ def registrar_salida(
             Movimiento.objects.create(
                 producto=producto, lote=lote, tipo=Movimiento.Tipo.SALIDA,
                 cantidad=tomar, usuario=usuario, motivo=motivo,
-                concepto=concepto, precio_unitario=precio,
+                concepto=concepto, precio_unitario=precio, paciente=paciente,
             )
         )
         pendiente -= tomar

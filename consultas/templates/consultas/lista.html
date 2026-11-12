@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Consultas · Clínica Familiar{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+        <h1 class="text-3xl font-extrabold text-marino">Consultas</h1>
+        <p class="mt-1 text-slate-600">{% if ver == 'mias' %}Las consultas que usted ha atendido.{% else %}Todas las consultas registradas.{% endif %}</p>
+    </div>
+    {% if es_medico %}
+    <div class="flex gap-2">
+        <a href="?ver=mias" class="btn btn-chico {% if ver == 'mias' %}btn-principal{% else %}btn-secundario{% endif %}">Mis consultas</a>
+        <a href="?ver=todas" class="btn btn-chico {% if ver == 'todas' %}btn-principal{% else %}btn-secundario{% endif %}">Todas</a>
+    </div>
+    {% endif %}
+</div>
+
+<form method="get" role="search" class="tarjeta mb-6">
+    <input type="hidden" name="ver" value="{{ ver }}">
+    <label for="q" class="etiqueta">Buscar por nombre del paciente</label>
+    <div class="flex flex-col gap-2 sm:flex-row">
+        <input id="q" name="q" type="search" value="{{ q }}" autocomplete="off" class="campo" placeholder="Ej.: María Pérez">
+        <button type="submit" class="btn btn-principal">Buscar</button>
+        {% if q %}<a href="?ver={{ ver }}" class="btn btn-secundario">Limpiar</a>{% endif %}
+    </div>
+</form>
+
+{% if pagina.object_list %}
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-marino-claro text-xs font-bold uppercase tracking-wide text-marino">
+            <tr>
+                <th scope="col" class="px-4 py-3">Fecha</th>
+                <th scope="col" class="px-4 py-3">Paciente</th>
+                <th scope="col" class="hidden px-4 py-3 md:table-cell">Motivo</th>
+                <th scope="col" class="hidden px-4 py-3 sm:table-cell">Médico</th>
+                <th scope="col" class="hidden px-4 py-3 text-right sm:table-cell">Medicamentos</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for c in pagina %}
+            <tr class="hover:bg-blanco-humo">
+                <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ c.fecha|date:"d/m/Y H:i" }}</td>
+                <td class="px-4 py-3">
+                    <a href="{{ c.get_absolute_url }}" class="font-semibold text-marino hover:underline">{{ c.paciente.nombre_completo }}</a>
+                    <span class="block text-xs text-slate-500">Exp. {{ c.paciente.numero_expediente }}</span>
+                </td>
+                <td class="hidden px-4 py-3 text-gris-oscuro md:table-cell">{{ c.motivo }}</td>
+                <td class="hidden px-4 py-3 text-slate-600 sm:table-cell">{{ c.nombre_medico }}</td>
+                <td class="hidden px-4 py-3 text-right tabular-nums sm:table-cell">{{ c.num_medicamentos }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if pagina.has_other_pages %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Páginas">
+    {% if pagina.has_previous %}<a href="{% querystring pagina=pagina.previous_page_number %}" class="btn btn-secundario btn-chico">← Anterior</a>{% else %}<span></span>{% endif %}
+    <span class="text-slate-600">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}<a href="{% querystring pagina=pagina.next_page_number %}" class="btn btn-secundario btn-chico">Siguiente →</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-10 text-center">
+    <p class="text-lg font-semibold text-marino">{% if q %}No hay consultas de «{{ q }}».{% else %}Todavía no hay consultas registradas.{% endif %}</p>
+    <p class="mt-1 text-sm text-slate-600">Las consultas se registran con el botón «Atender» de cada cita, o desde el expediente del paciente.</p>
+</div>
+{% endif %}
+{% endblock %}

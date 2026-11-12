@@ -67,7 +67,13 @@
             <p class="mt-4 rounded-lg bg-blanco-humo px-3 py-2 text-sm text-slate-600">No refiere alergias.</p>
             {% endif %}
             <div class="mt-4 space-y-3">
-                <a href="{{ siguiente.paciente.get_absolute_url }}" class="btn btn-acento w-full">Abrir expediente</a>
+                {% if perms.consultas.add_consulta %}
+                <a href="{% url 'consultas:atender' siguiente.pk %}" class="btn btn-acento w-full">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg>
+                    Atender
+                </a>
+                {% endif %}
+                <a href="{{ siguiente.paciente.get_absolute_url }}" class="btn btn-principal w-full">Abrir expediente</a>
                 <a href="{{ siguiente.get_absolute_url }}" class="btn btn-secundario w-full">Ver la cita</a>
             </div>
             {% else %}
@@ -84,20 +90,14 @@
                 {% if perms.citas.add_cita %}
                 <a href="{% url 'citas:nueva' %}" class="btn btn-secundario w-full">Agendar una cita de control</a>
                 {% endif %}
+                {% if perms.consultas.view_consulta %}
+                <a href="{% url 'consultas:lista' %}" class="btn btn-secundario w-full">Mis consultas{% if consultas_hoy %} ({{ consultas_hoy }} hoy){% endif %}</a>
+                {% endif %}
                 {% if perms.inventario.view_producto %}
                 <a href="{% url 'inventario:producto_lista' %}" class="btn btn-secundario w-full">Consultar medicamentos disponibles</a>
                 {% endif %}
             </div>
-            <h3 class="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Otros módulos</h3>
-            <ul class="mt-2 space-y-2 text-sm">
-                <li class="flex items-center justify-between gap-2 rounded-lg bg-blanco-humo px-3 py-2">
-                    <span class="flex items-center gap-2 text-slate-600">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg>
-                        Consultas
-                    </span>
-                    <span class="insignia shrink-0 bg-white text-xs text-slate-500 ring-1 ring-slate-200">Próximamente</span>
-                </li>
-            </ul>
+            <p class="mt-4 text-xs text-slate-500">Para atender a un paciente sin cita, ábralo en «Buscar expedientes» y use «Atender sin cita».</p>
         </section>
     </div>
 </div>

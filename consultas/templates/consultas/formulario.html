@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{% if consulta %}Editar consulta{% else %}Atender{% endif %} · {{ paciente.nombre_completo }}{% endblock %}
+
+{% block boton_registrar %}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    {% if consulta %}
+    <a href="{{ consulta.get_absolute_url }}" class="enlace text-sm">← Volver a la consulta</a>
+    {% elif cita %}
+    <a href="{{ cita.get_absolute_url }}" class="enlace text-sm">← Volver a la cita</a>
+    {% else %}
+    <a href="{{ paciente.get_absolute_url }}" class="enlace text-sm">← Volver al expediente</a>
+    {% endif %}
+</div>
+
+<div class="tarjeta overflow-hidden p-0">
+    <div class="h-2 bg-verde-teal" aria-hidden="true"></div>
+    <div class="flex flex-wrap items-center gap-4 p-5 sm:p-6">
+        <span class="avatar h-14 w-14 text-xl">{{ paciente.iniciales }}</span>
+        <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold uppercase tracking-wide text-verde-teal-oscuro">{% if consulta %}Editar consulta n.° {{ consulta.pk }}{% else %}Consulta{% if cita %} · cita de las {{ cita.fecha_hora|time:"g:i a" }}{% else %} sin cita{% endif %}{% endif %}</p>
+            <h1 class="text-2xl font-extrabold text-marino sm:text-3xl">{{ paciente.nombre_completo }}</h1>
+            <p class="text-slate-600">{{ paciente.edad_texto }} · Expediente {{ paciente.numero_expediente }}{% if historial.tipo_sangre %} · Sangre {{ historial.tipo_sangre }}{% endif %}</p>
+        </div>
+        <a href="{{ paciente.get_absolute_url }}" target="_blank" class="btn btn-secundario btn-chico">Ver expediente completo</a>
+    </div>
+    {% if historial.alergias %}
+    <div role="alert" class="mx-5 mb-5 flex gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900 sm:mx-6">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-6 w-6 shrink-0" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>
+        <div>
+            <p class="font-bold">Alergias</p>
+            <p class="whitespace-pre-line">{{ historial.alergias }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if form.errors or formset.total_error_count or formset.non_form_errors %}
+<div role="alert" class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+    <p class="font-semibold">No se pudo guardar. Revise los datos marcados en rojo.</p>
+    {% for error in formset.non_form_errors %}<p class="mt-1">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" novalidate class="mt-6 grid gap-6 lg:grid-cols-3">
+    {% csrf_token %}
+    <div class="min-w-0 space-y-6 lg:col-span-2">
+        {% if avisos_alergia %}
+        <section role="alert" class="rounded-2xl border-2 border-red-400 bg-red-50 p-5 text-red-900">
+            <h2 class="text-lg font-bold">Revise las alergias antes de guardar</h2>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                {% for nombre, palabras in avisos_alergia %}
+                <li><strong>{{ nombre }}</strong> coincide con la alergia anotada: «{{ palabras|join:", " }}».</li>
+                {% endfor %}
+            </ul>
+            <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3 text-gris-oscuro">
+                <input type="checkbox" name="confirmo_alergias" value="1" class="casilla">
+                <span class="text-sm">Revisé las alergias del paciente y aun así quiero recetarlo.</span>
+            </label>
+        </section>
+        {% endif %}
+
+        <section class="tarjeta min-w-0 space-y-5">
+            <h2 class="titulo-seccion">Consulta</h2>
+            {% include "pacientes/_campo.html" with campo=form.motivo sin_paso=True %}
+            {% include "pacientes/_campo.html" with campo=form.sintomas sin_paso=True %}
+            {% include "pacientes/_campo.html" with campo=form.diagnostico sin_paso=True %}
+            {% include "pacientes/_campo.html" with campo=form.indicaciones sin_paso=True %}
+        </section>
+
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Receta</h2>
+            <p class="mt-1 text-sm text-slate-600">
+                Elija el medicamento de la farmacia de la clínica (se ve cuánto hay) o escriba el nombre si el paciente
+                lo compra afuera. Lo de la farmacia <strong>se descuenta del inventario cuando Recepción lo entrega</strong>.
+                Las filas que deje vacías no se guardan.
+            </p>
+            {{ formset.management_form }}
+
+            {% if entregados %}
+            <div class="mt-4 rounded-xl bg-blanco-humo p-4">
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Ya entregados (no se pueden cambiar)</h3>
+                <ul class="mt-2 space-y-1 text-sm">
+                    {% for m in entregados %}
+                    <li><strong class="text-marino">{{ m.nombre_medicamento }}</strong> · {{ m.dosis }} {{ m.frecuencia }} · {{ m.cantidad }} entregado{{ m.cantidad|pluralize }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="mt-4 space-y-4">
+                {% for f in formset %}
+                <fieldset class="rounded-xl border {% if f.errors %}border-red-300 bg-red-50/40{% else %}border-slate-200{% endif %} p-4">
+                    <legend class="px-1 text-sm font-semibold text-marino">Medicamento {{ forloop.counter }}</legend>
+                    {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                    {% for error in f.non_field_errors %}<p class="mb-3 text-sm font-medium text-red-700">{{ error }}</p>{% endfor %}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        {% include "pacientes/_campo.html" with campo=f.producto sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.nombre sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.dosis sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.frecuencia sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.duracion sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.cantidad sin_paso=True %}
+                        {% include "pacientes/_campo.html" with campo=f.indicaciones sin_paso=True clase="sm:col-span-2" %}
+                    </div>
+                    {% if f.instance.pk %}
+                    <label class="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-red-700">
+                        {{ f.DELETE }} Quitar de la receta
+                    </label>
+                    {% endif %}
+                </fieldset>
+                {% endfor %}
+            </div>
+            <p class="mt-3 text-xs text-slate-500">¿Necesita más filas? Guarde y use «Editar consulta» para agregar otros medicamentos.</p>
+        </section>
+
+        <div class="flex flex-wrap justify-end gap-3">
+            <a href="{% if consulta %}{{ consulta.get_absolute_url }}{% elif cita %}{{ cita.get_absolute_url }}{% else %}{{ paciente.get_absolute_url }}{% endif %}" class="btn btn-secundario">Cancelar</a>
+            <button type="submit" class="btn btn-acento">{% if consulta %}Guardar cambios{% elif cita %}Guardar y marcar la cita como atendida{% else %}Guardar consulta{% endif %}</button>
+        </div>
+    </div>
+
+    <aside class="min-w-0 space-y-6">
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Historial clínico</h2>
+            <dl class="mt-2 divide-y divide-slate-100">
+                {% include "pacientes/_dato.html" with etiqueta="Enfermedades crónicas" valor=historial.enfermedades_cronicas %}
+                {% include "pacientes/_dato.html" with etiqueta="Medicamentos de uso continuo" valor=historial.medicamentos_actuales %}
+                {% include "pacientes/_dato.html" with etiqueta="Antecedentes personales" valor=historial.antecedentes_personales %}
+            </dl>
+        </section>
+        <section class="tarjeta min-w-0">
+            <h2 class="titulo-seccion">Consultas anteriores</h2>
+            {% if anteriores %}
+            <ul class="mt-2 divide-y divide-slate-100 text-sm">
+                {% for c in anteriores %}
+                <li class="py-2">
+                    <a href="{{ c.get_absolute_url }}" target="_blank" class="font-semibold text-marino hover:underline">{{ c.fecha|date:"d/m/Y" }} · {{ c.motivo }}</a>
+                    <p class="text-slate-600">{{ c.diagnostico|truncatechars:90 }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-2 text-sm text-slate-600">Es su primera consulta registrada.</p>
+            {% endif %}
+        </section>
+    </aside>
+</form>
+{% endblock %}

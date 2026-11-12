@@ -91,6 +91,31 @@
                 {% endif %}
             </div>
         </section>
+        {% if perms.consultas.entregar_medicamentorecetado %}
+        <section class="tarjeta min-w-0">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="titulo-seccion">Recetas por entregar{% if total_por_entregar %} <span class="insignia ml-1 bg-coral-claro px-2 py-0.5 text-xs text-coral-oscuro">{{ total_por_entregar }}</span>{% endif %}</h2>
+                <a href="{% url 'consultas:por_entregar' %}" class="enlace shrink-0 whitespace-nowrap text-sm">Ver todas</a>
+            </div>
+            {% if por_entregar %}
+            <ul class="mt-3 divide-y divide-slate-100 text-sm">
+                {% for c in por_entregar %}
+                <li>
+                    <a href="{% url 'consultas:entregar' c.pk %}" class="flex items-center justify-between gap-2 rounded-lg px-2 py-2.5 hover:bg-blanco-humo">
+                        <span class="min-w-0">
+                            <span class="block truncate font-semibold text-marino">{{ c.paciente.nombre_completo }}</span>
+                            <span class="block truncate text-xs text-slate-500">{% for m in c.pendientes %}{{ m.nombre_medicamento }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        </span>
+                        <span class="shrink-0 font-semibold text-coral-oscuro">Entregar</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-3 text-sm text-slate-600">No hay medicamentos recetados por entregar.</p>
+            {% endif %}
+        </section>
+        {% endif %}
         {% if perms.inventario.view_producto %}
         {% include "inicio/_inventario.html" %}
         {% endif %}

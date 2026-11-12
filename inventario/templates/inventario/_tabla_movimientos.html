@@ -30,7 +30,10 @@
                     <span class="block text-xs text-slate-500">{{ m.precio_unitario|dinero }} c/u</span>
                     {% else %}<span class="text-slate-400">—</span>{% endif %}
                 </td>
-                <td class="px-4 py-3 text-slate-600">{{ m.motivo|default:"—" }}</td>
+                <td class="px-4 py-3 text-slate-600">
+                    {{ m.motivo|default:"—" }}
+                    {% if m.paciente %}<span class="mt-1 block text-xs text-slate-500">Paciente: {{ m.paciente.nombre_completo }}</span>{% endif %}
+                </td>
                 <td class="px-4 py-3 text-slate-600">{% if m.usuario %}{{ m.usuario.get_full_name|default:m.usuario.username }}{% else %}—{% endif %}</td>
             </tr>
             {% empty %}

@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from citas.models import Cita
+from consultas.views import consultas_por_entregar
 from inventario import consultas
 from pacientes.models import Paciente
 from reportes import calculos
@@ -76,6 +77,9 @@ def _para_recepcion(usuario, ahora):
         )
     if usuario.has_perm("inventario.view_producto"):
         contexto["inventario"] = _avisos_de_inventario(ahora.date())
+    if usuario.has_perm("consultas.entregar_medicamentorecetado"):
+        por_entregar = list(consultas_por_entregar())
+        contexto.update(por_entregar=por_entregar[:5], total_por_entregar=len(por_entregar))
     return contexto
 
 
@@ -94,6 +98,7 @@ def _para_medico(usuario, ahora):
         proximas=proximas[:6],
         total_proximas=proximas.count(),
         citas_sin_medico=_citas(inicio_dia, fin_dia, medico__isnull=True, estado__in=Cita.ACTIVAS).count(),
+        consultas_hoy=usuario.consultas_atendidas.filter(fecha__gte=inicio_dia, fecha__lt=fin_dia).count(),
     )
     return contexto
 

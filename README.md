@@ -13,6 +13,7 @@ en un solo lugar. Proyecto de equipo de Programación II.
 | Pacientes | `pacientes/` | Registro según la norma del MINSAL, expediente único, historial clínico | Fer |
 | Inventario | `inventario/` | Productos, lotes con vencimiento, entradas y salidas, panel por categorías | David |
 | Citas | `citas/` | Agenda por día y semana, estados de la cita, recordatorios por SMS | Por asignar |
+| Consultas y recetas | `consultas/` | El médico atiende (consulta, diagnóstico y receta); Recepción entrega lo recetado y se descuenta del inventario | David |
 | Reportes | `reportes/` | Reporte del mes: citas, pacientes, compras, ventas y ganancia | Por asignar |
 
 Además:
@@ -104,9 +105,25 @@ rol llega a **su propia pantalla de inicio**:
 
 | Rol | Qué hace | Su pantalla de inicio |
 |---|---|---|
-| **Administrador** | Todo lo de Recepción, más crear usuarios, asignar roles y entrar al panel de administración | Números del mes, el equipo con sus roles, citas de hoy y avisos del inventario |
-| **Médico** | Ve y actualiza expedientes, agenda y atiende citas. El inventario solo lo consulta; no registra pacientes nuevos | Solo **sus** citas, el siguiente paciente con sus **alergias** y sus próximos 7 días |
-| **Recepción** | Registra pacientes y maneja la agenda y el inventario | Citas de hoy de todos los médicos, pacientes recién registrados y avisos del inventario |
+| **Administrador** | Todo lo de Recepción, más leer las consultas, crear usuarios, asignar roles y entrar al panel de administración | Números del mes, el equipo con sus roles, citas de hoy y avisos del inventario |
+| **Médico** | Atiende: consulta, diagnóstico y receta. Ve y actualiza expedientes y lleva su agenda. El inventario solo lo consulta; no registra pacientes nuevos | Solo **sus** citas, el siguiente paciente con sus **alergias** y el botón **Atender** |
+| **Recepción** | Registra pacientes, maneja la agenda y el inventario y **entrega lo recetado** (ve la receta, no el diagnóstico) | Citas de hoy de todos los médicos, **recetas por entregar**, pacientes recién registrados y avisos del inventario |
+
+## Consultas y recetas
+
+1. **El médico atiende** con el botón «Atender» de la cita (o «Atender sin cita» en el expediente): anota
+   motivo, síntomas, diagnóstico e indicaciones, y receta. Cada medicamento se elige **de la farmacia de
+   la clínica** (se ve cuánto hay) o se escribe el nombre si el paciente lo **compra afuera**.
+2. **Aviso de alergias:** si lo recetado coincide con las alergias del historial, el sistema avisa y pide
+   confirmar antes de guardar.
+3. Al guardar, la cita queda como «Atendida» y la consulta aparece en el expediente. La receta se puede
+   **imprimir** (sin el diagnóstico).
+4. **Recetar no descuenta nada.** Lo de la farmacia queda «por entregar» y **Recepción lo entrega** en
+   «Recetas»: ahí se descuenta del inventario (primero el lote que vence antes, nunca uno vencido), como
+   venta o sin costo, y la salida queda ligada al paciente. Si no alcanza, se deja pendiente o se marca
+   que lo compra afuera.
+
+La consulta, el diagnóstico y la receta se guardan **cifrados**, como el resto de los datos de salud.
 
 - **Dónde se decide:** en `usuarios/roles.py` (`PERMISOS_POR_ROL`). Para darle o quitarle algo a
   un rol se cambia ese archivo y nada más; no hay que correr comandos.

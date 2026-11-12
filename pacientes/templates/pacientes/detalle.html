@@ -168,10 +168,7 @@
 </section>
 {% endif %}
 
-<section class="mt-6 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 print:hidden">
-    <h2 class="titulo-seccion">Consultas</h2>
-    <p class="mt-1 text-sm text-slate-600">Aquí se mostrarán las consultas del paciente cuando se integre el módulo de consultas (HU-02).</p>
-</section>
+{% include "consultas/_historial_paciente.html" with paciente=paciente %}
 
 <section class="tarjeta mt-6 print:mt-3 print:shadow-none">
     <h2 class="titulo-seccion">Datos del registro</h2>

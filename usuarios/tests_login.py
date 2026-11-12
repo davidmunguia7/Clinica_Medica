@@ -25,6 +25,14 @@ def crear(username, rol=Rol.RECEPCION, **campos):
     return Usuario.objects.create_user(username, password=CLAVE, rol=rol, **campos)
 
 
+# La etiqueta del menú principal de base.html (no basta buscar el texto: también sale en un script)
+MENU_PRINCIPAL = re.compile(r'<nav\s[^>]*aria-label="Menú principal"')
+
+
+def tiene_menu(respuesta):
+    return bool(MENU_PRINCIPAL.search(respuesta.content.decode()))
+
+
 def tipos(nombre):
     """Lo que dice la bitácora de ese usuario, del más viejo al más nuevo."""
     return list(Acceso.objects.filter(nombre_usuario__iexact=nombre).order_by("momento", "pk")
@@ -205,7 +213,9 @@ class CambiarClaveTests(TestCase):
         for rol in Rol.values:
             with self.subTest(rol=rol):
                 self.client.force_login(crear(f"usuario-{rol.lower()}", rol))
-                self.assertContains(self.client.get(reverse("inicio")), f'href="{self.url}"')
+                pagina = self.client.get(reverse("inicio"))
+                self.assertContains(pagina, f'href="{self.url}"')
+                self.assertTrue(tiene_menu(pagina))
 
     def test_cambia_su_contrasena_y_sigue_adentro(self):
         respuesta = self.cambiar()
@@ -275,7 +285,7 @@ class ContrasenaTemporalTests(TestCase):
             self.assertRedirects(self.client.get(pantalla), reverse("usuarios:cambiar_clave"))
         pagina = self.client.get(reverse("usuarios:cambiar_clave"))
         self.assertContains(pagina, "Antes de seguir, cree su propia contraseña")
-        self.assertNotContains(pagina, "<nav ")  # sin menú hasta que cree la suya
+        self.assertFalse(tiene_menu(pagina))  # sin menú hasta que cree la suya
 
         respuesta = self.client.post(reverse("usuarios:cambiar_clave"), {
             "old_password": clave, "new_password1": NUEVA, "new_password2": NUEVA,
@@ -283,7 +293,9 @@ class ContrasenaTemporalTests(TestCase):
         self.assertRedirects(respuesta, reverse("inicio"))
         self.medica.refresh_from_db()
         self.assertFalse(self.medica.debe_cambiar_clave)
-        self.assertEqual(self.client.get(reverse("pacientes:lista")).status_code, 200)
+        pagina = self.client.get(reverse("pacientes:lista"))
+        self.assertEqual(pagina.status_code, 200)
+        self.assertTrue(tiene_menu(pagina))  # ya con su contraseña, vuelve el menú
 
     def test_puede_salir_sin_cambiarla(self):
         clave = self.restablecer()

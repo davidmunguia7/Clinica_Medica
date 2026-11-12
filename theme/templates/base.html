@@ -22,7 +22,7 @@
     {% url 'consultas:por_entregar' as url_por_entregar %}
     {% with ns=request.resolver_match.namespace vista=request.resolver_match.url_name %}
     <header class="border-b border-slate-200 bg-white print:hidden">
-        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
             <a href="{{ url_inicio|default:'/' }}" class="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-verde-teal">
                 <img src="{% static 'img/logo-clinica-familiar.svg' %}" alt="" class="h-11 w-auto">
                 <span class="text-xl font-bold leading-tight tracking-tight text-marino">Clínica Familiar</span>
@@ -31,45 +31,45 @@
             {% if user.is_authenticated %}
             {# Con una contraseña temporal no hay menú: primero tiene que crear la suya (usuarios/middleware.py) #}
             {% if not user.debe_cambiar_clave %}
-            {# En pantallas chicas el menú va en su propia fila y se desliza de lado si no cabe #}
-            <navclass="order-last -mb-3 flex w-full gap-1 overflow-x-auto whitespace-nowrap text-sm font-semibold lg:order-none lg:mb-0 lg:w-auto lg:overflow-visible" aria-label="Menú principal">
+            {# Hasta xl el menú va en su propia fila (con todas las opciones del Administrador no cabe junto al logo) y se desliza de lado si no cabe #}
+            <nav class="order-last -mb-3 flex w-full gap-1 overflow-x-auto whitespace-nowrap text-sm font-semibold xl:order-none xl:mb-0 xl:w-auto xl:overflow-visible" aria-label="Menú principal">
                 {% if url_inicio %}
                 <a href="{{ url_inicio }}" {% if vista == 'inicio' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if vista == 'inicio' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inicio</a>
                 {% endif %}
                 {% if url_pacientes and perms.pacientes.view_paciente %}
                 <a href="{{ url_pacientes }}" {% if ns == 'pacientes' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'pacientes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Pacientes</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'pacientes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Pacientes</a>
                 {% endif %}
                 {% if url_citas and perms.citas.view_cita %}
                 <a href="{{ url_citas }}" {% if ns == 'citas' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'citas' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Citas</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'citas' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Citas</a>
                 {% endif %}
                 {% if url_consultas and perms.consultas.view_consulta %}
                 <a href="{{ url_consultas }}" {% if ns == 'consultas' and vista != 'por_entregar' and vista != 'entregar' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'consultas' and vista != 'por_entregar' and vista != 'entregar' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Consultas</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'consultas' and vista != 'por_entregar' and vista != 'entregar' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Consultas</a>
                 {% endif %}
                 {# Recepción entrega lo recetado (se descuenta del inventario) #}
                 {% if url_por_entregar and perms.consultas.entregar_medicamentorecetado %}
                 <a href="{{ url_por_entregar }}" {% if vista == 'por_entregar' or vista == 'entregar' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if vista == 'por_entregar' or vista == 'entregar' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Recetas</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if vista == 'por_entregar' or vista == 'entregar' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Recetas</a>
                 {% endif %}
                 {% if url_inventario and perms.inventario.view_producto %}
                 <a href="{{ url_inventario }}" {% if ns == 'inventario' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'inventario' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inventario</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'inventario' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Inventario</a>
                 {% endif %}
                 {% if url_reportes %}{% if perms.pacientes.view_paciente or perms.citas.view_cita or perms.inventario.view_movimiento %}
                 <a href="{{ url_reportes }}" {% if ns == 'reportes' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'reportes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Reportes</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'reportes' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Reportes</a>
                 {% endif %}{% endif %}
                 {# Solo para el rol Administrador (usuarios/roles.py) #}
                 {% if url_usuarios and perms.usuarios.view_usuario %}
                 <a href="{{ url_usuarios }}" {% if ns == 'usuarios' and vista == 'lista' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' and vista == 'lista' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Usuarios</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'usuarios' and vista == 'lista' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Usuarios</a>
                 {% endif %}
                 {% if user.rol == 'RECEPCION' %}
                 <a href="{% url 'usuarios:perfil' %}" {% if ns == 'usuarios' and vista == 'perfil' %}aria-current="page"{% endif %}
-                   class="shrink-0 border-b-2 px-3 py-3 lg:py-2 {% if ns == 'usuarios' and vista == 'perfil' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Mi perfil</a>
+                   class="shrink-0 border-b-2 px-2.5 py-3 xl:py-2{% if ns == 'usuarios' and vista == 'perfil' %}border-verde-teal text-marino{% else %}border-transparent text-slate-600 hover:text-marino{% endif %}">Mi perfil</a>
                 {% endif %}
             </nav>
             {% endif %}

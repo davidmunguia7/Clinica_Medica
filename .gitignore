@@ -9,3 +9,5 @@ __pycache__/
 # Archivos de entorno y base de datos local (si aplicara)
 .env
 db.sqlite3
+# Usuarios y contraseña de los datos de ejemplo (manage.py cargar_datos_de_ejemplo)
+credenciales_presentacion.txt

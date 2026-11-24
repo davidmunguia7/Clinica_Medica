@@ -23,8 +23,9 @@ Además:
   cifrado de datos (`cifrado.py`).
 - `theme/`: diseño compartido. La plantilla base (`templates/base.html`), el login, la paleta de
   colores y los estilos de Tailwind.
-- `docs/`: documentación de [seguridad (Fernet, TDE y acceso al sistema)](docs/seguridad.md) y de
-  [recordatorios por SMS](docs/recordatorios.md).
+- `docs/`: documentación de [seguridad (Fernet, TDE y acceso al sistema)](docs/seguridad.md), de
+  [recordatorios por SMS](docs/recordatorios.md) y de la [presentación](docs/presentacion.md).
+- `presentacion/`: archivos para encender el sistema con datos de ejemplo y un enlace público.
 
 ## Tecnología
 
@@ -103,6 +104,19 @@ Abre **http://127.0.0.1:8000/** y entra con tu usuario. Para apagarlo: `Ctrl + C
 > Usamos `.\venv\Scripts\python.exe` para no tener que activar el entorno virtual. Si prefieres
 > activarlo (`venv\Scripts\activate`), la línea debe empezar con `(venv)` y después basta con
 > `python manage.py ...`.
+
+## Presentación (datos de ejemplo y enlace público)
+
+Para que alguien de afuera (el profesor) pruebe el sistema, se usa una base aparte con datos de
+ejemplo inventados y un enlace https gratuito:
+
+1. `presentacion\preparar_datos.bat`: crea la base `clinica_presentacion` con los datos de ejemplo.
+   Los usuarios y la contraseña quedan en `credenciales_presentacion.txt`.
+2. `presentacion\encender.bat`: enciende el sistema y muestra la dirección pública.
+
+La primera vez hay que instalar `cloudflared` y poner una `SECRET_KEY` en el `.env`. Los pasos,
+qué traen los datos de ejemplo y cómo mandar SMS de verdad con Twilio están en
+[docs/presentacion.md](docs/presentacion.md).
 
 ## Roles
 
@@ -226,6 +240,8 @@ relleno para la acción más importante; las demás con borde).
 | `manage.py generar_clave_cifrado --guardar` | Crea la clave de cifrado en el `.env` |
 | `manage.py recifrar_datos` | Vuelve a cifrar todo después de cambiar la clave |
 | `manage.py enviar_recordatorios` | Envía (o simula) los SMS de las citas de las próximas 24 horas |
+| `manage.py cargar_datos_de_ejemplo` | Carga datos de ejemplo inventados en una base sin pacientes |
+| `manage.py preparar_presentacion` | Borra y crea la base de la presentación con datos de ejemplo (solo `clinica_presentacion`) |
 | `manage.py tailwind build` | Recompila el CSS |
 
 (Todos se escriben después de `.\venv\Scripts\python.exe`).

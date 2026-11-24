@@ -1,0 +1,39 @@
+---
+title: Diagrama de secuencia · Entregar lo recetado y descontar del inventario
+---
+sequenceDiagram
+    autonumber
+    actor R as Recepción
+    participant N as Navegador
+    participant V as Vista entregar<br/>(consultas/views.py)
+    participant E as Entregas<br/>(consultas/entregas.py)
+    participant S as Servicios de inventario<br/>(inventario/services.py)
+    participant DB as SQL Server
+
+    R->>N: «Recetas» y abre la receta del paciente
+    N->>V: GET (permiso consultas.entregar_medicamentorecetado)
+    V->>DB: Medicamentos POR_ENTREGAR, precios y existencia sin lotes vencidos
+    V-->>N: Lista con «Total a cobrar»
+    R->>N: Elige qué entrega, qué compra afuera y si se cobra. «Guardar»
+    N->>V: POST
+    V->>DB: BEGIN TRANSACTION
+    loop Cada medicamento de la receta
+        alt Se entrega
+            V->>E: entregar(medicamento, usuario, concepto VENTA o USO)
+            E->>S: registrar_salida(producto, cantidad, paciente)
+            S->>DB: SELECT lotes no vencidos con existencia, primero el que vence antes (FOR UPDATE)
+            alt No alcanza la existencia
+                S-->>V: ValidationError «Stock insuficiente…»
+                V->>DB: ROLLBACK (no se descuenta nada)
+                V-->>N: Mensaje de error
+            else Alcanza
+                S->>DB: UPDATE Lote.cantidad_actual e INSERT Movimiento SALIDA (uno por lote)
+                E->>DB: UPDATE MedicamentoRecetado = ENTREGADO y lo liga a sus movimientos
+            end
+        else El paciente lo compra afuera
+            V->>E: marcar_afuera(medicamento)
+            E->>DB: UPDATE MedicamentoRecetado = AFUERA
+        end
+    end
+    V->>DB: COMMIT
+    V-->>N: «Listo… Cobrar al paciente: $X.XX»

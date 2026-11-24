@@ -1,0 +1,86 @@
+---
+title: Diagrama entidad-relación · Sistema Clínico
+---
+flowchart LR
+    %% Entidades (rectángulos), relaciones (rombos) y cardinalidades (1, N, 0..1) en las líneas
+    classDef entidad fill:#e8edf8,stroke:#1e3a8a,stroke-width:2px,color:#1e293b,font-weight:bold
+    classDef relacion fill:#ffffff,stroke:#0f766e,stroke-width:1.5px,color:#0f766e
+
+    USUARIO[USUARIO<br/>rol: Administrador, Médico o Recepción]:::entidad
+    ACCESO[ACCESO<br/>bitácora]:::entidad
+    DEPARTAMENTO[DEPARTAMENTO]:::entidad
+    MUNICIPIO[MUNICIPIO]:::entidad
+    DISTRITO[DISTRITO]:::entidad
+    PACIENTE[PACIENTE]:::entidad
+    HISTORIAL[HISTORIAL CLÍNICO<br/>expediente]:::entidad
+    CITA[CITA]:::entidad
+    SMS[MENSAJE SMS<br/>recordatorio]:::entidad
+    CONSULTA[CONSULTA]:::entidad
+    RECETADO[MEDICAMENTO RECETADO]:::entidad
+    CATEGORIA[CATEGORÍA]:::entidad
+    PRODUCTO[PRODUCTO]:::entidad
+    LOTE[LOTE<br/>con vencimiento]:::entidad
+    MOVIMIENTO[MOVIMIENTO<br/>entrada o salida]:::entidad
+
+    r_genera_acceso{genera}:::relacion
+    r_divide_mun{se divide en}:::relacion
+    r_divide_dis{se divide en}:::relacion
+    r_domicilio{vive en}:::relacion
+    r_registra_pac{registra}:::relacion
+    r_tiene_hist{tiene}:::relacion
+    r_solicita{solicita}:::relacion
+    r_agenda{atiende}:::relacion
+    r_recuerda{se recuerda con}:::relacion
+    r_recibe{recibe}:::relacion
+    r_realiza{realiza}:::relacion
+    r_origina{origina}:::relacion
+    r_incluye{incluye}:::relacion
+    r_se_receta{se receta como}:::relacion
+    r_agrupa{agrupa}:::relacion
+    r_compone{se compone de}:::relacion
+    r_afecta{afecta a}:::relacion
+    r_registra_mov{registra}:::relacion
+    r_entrega{se entrega a}:::relacion
+    r_descuenta{se descuenta con}:::relacion
+
+    USUARIO -- "1" --- r_genera_acceso
+
+    r_genera_acceso -- "N" --- ACCESO
+    DEPARTAMENTO -- "1" --- r_divide_mun
+    r_divide_mun -- "N" --- MUNICIPIO
+    MUNICIPIO -- "1" --- r_divide_dis
+    r_divide_dis -- "N" --- DISTRITO
+    PACIENTE -- "N" --- r_domicilio
+    r_domicilio -- "1" --- DISTRITO
+    USUARIO -- "1" --- r_registra_pac
+    r_registra_pac -- "N" --- PACIENTE
+    PACIENTE -- "1" --- r_tiene_hist
+    r_tiene_hist -- "1" --- HISTORIAL
+    PACIENTE -- "1" --- r_solicita
+    r_solicita -- "N" --- CITA
+    USUARIO -- "1 médico" --- r_agenda
+    r_agenda -- "N" --- CITA
+    CITA -- "1" --- r_recuerda
+    r_recuerda -- "N" --- SMS
+    PACIENTE -- "1" --- r_recibe
+    r_recibe -- "N" --- CONSULTA
+    USUARIO -- "1 médico" --- r_realiza
+    r_realiza -- "N" --- CONSULTA
+    CITA -- "0..1" --- r_origina
+    r_origina -- "0..1" --- CONSULTA
+    CONSULTA -- "1" --- r_incluye
+    r_incluye -- "N" --- RECETADO
+    PRODUCTO -- "0..1" --- r_se_receta
+    r_se_receta -- "N" --- RECETADO
+    CATEGORIA -- "0..1" --- r_agrupa
+    r_agrupa -- "N" --- PRODUCTO
+    PRODUCTO -- "1" --- r_compone
+    r_compone -- "N" --- LOTE
+    LOTE -- "1" --- r_afecta
+    r_afecta -- "N" --- MOVIMIENTO
+    USUARIO -- "1" --- r_registra_mov
+    r_registra_mov -- "N" --- MOVIMIENTO
+    MOVIMIENTO -- "N" --- r_entrega
+    r_entrega -- "0..1" --- PACIENTE
+    RECETADO -- "N" --- r_descuenta
+    r_descuenta -- "M" --- MOVIMIENTO

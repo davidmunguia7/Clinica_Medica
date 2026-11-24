@@ -1,0 +1,39 @@
+---
+title: Diagrama de secuencia · Atender una consulta y recetar
+---
+sequenceDiagram
+    autonumber
+    actor Med as Médico
+    participant N as Navegador
+    participant V as Vista atender<br/>(consultas/views.py)
+    participant F as Formulario y receta<br/>(consultas/forms.py)
+    participant AL as Aviso de alergias<br/>(consultas/alergias.py)
+    participant DB as SQL Server
+
+    Med->>N: Clic en «Atender» en la cita del paciente
+    N->>V: GET (permiso consultas.add_consulta)
+    V->>DB: SELECT cita, paciente, historial y consultas anteriores
+    DB-->>V: Datos (se descifran con Fernet)
+    V-->>N: Formulario con alergias, historial y medicamentos de la farmacia
+    Med->>N: Escribe motivo, síntomas, diagnóstico y receta. «Guardar»
+    N->>V: POST
+    V->>F: Validar la consulta y cada medicamento
+    alt Hay datos con error
+        F-->>V: Errores
+        V-->>N: Formulario con los errores en rojo (lo escrito no se pierde)
+    else Datos válidos
+        V->>AL: coincidencias(alergias del historial, medicamentos recetados)
+        opt Un medicamento coincide con una alergia y no se confirmó
+            AL-->>V: Lista de coincidencias
+            V-->>N: «Revise las alergias antes de guardar»
+            Med->>N: Marca «Revisé las alergias…» y guarda otra vez
+            N->>V: POST con confirmo_alergias
+        end
+        V->>DB: BEGIN TRANSACTION
+        V->>DB: INSERT Consulta (motivo, síntomas, diagnóstico e indicaciones cifrados)
+        V->>DB: INSERT MedicamentoRecetado (de la farmacia: POR_ENTREGAR · de afuera: AFUERA)
+        V->>DB: UPDATE Cita SET estado = ATENDIDA
+        V->>DB: COMMIT
+        V-->>N: Redirige al detalle de la consulta
+    end
+    Note over V,DB: Recetar NO descuenta del inventario: se descuenta cuando Recepción entrega.

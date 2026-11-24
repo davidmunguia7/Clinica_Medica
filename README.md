@@ -24,7 +24,8 @@ Además:
 - `theme/`: diseño compartido. La plantilla base (`templates/base.html`), el login, la paleta de
   colores y los estilos de Tailwind.
 - `docs/`: documentación de [seguridad (Fernet, TDE y acceso al sistema)](docs/seguridad.md), de
-  [recordatorios por SMS](docs/recordatorios.md) y de la [presentación](docs/presentacion.md).
+  [recordatorios por SMS](docs/recordatorios.md), de la [presentación](docs/presentacion.md) y los
+  [diagramas](docs/diagramas/README.md) (base de datos, entidad-relación y de secuencia).
 - `presentacion/`: archivos para encender el sistema con datos de ejemplo y un enlace público.
 
 ## Tecnología

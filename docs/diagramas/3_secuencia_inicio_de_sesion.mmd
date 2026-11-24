@@ -1,0 +1,42 @@
+---
+title: Diagrama de secuencia · Iniciar sesión
+---
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant N as Navegador
+    participant V as Vista Entrar<br/>(usuarios/views.py)
+    participant B as BloqueoPorIntentos<br/>(usuarios/backends.py)
+    participant M as ModelBackend<br/>(Django)
+    participant A as Bitácora<br/>(usuarios/accesos.py)
+    participant DB as SQL Server
+
+    U->>N: Escribe usuario y contraseña
+    N->>V: POST /cuentas/entrar/
+    V->>B: authenticate(usuario, contraseña)
+    B->>DB: ¿5 intentos fallidos en los últimos 15 minutos?
+    alt Usuario bloqueado
+        B-->>V: PermissionDenied (ni la contraseña correcta sirve)
+        V->>A: señal user_login_failed
+        A->>DB: INSERT Acceso (INTENTO_BLOQUEADO)
+        V-->>N: «Este usuario está bloqueado»
+    else No está bloqueado
+        V->>M: authenticate(usuario, contraseña)
+        M->>DB: SELECT usuario y compara el hash de la contraseña
+        alt Contraseña incorrecta
+            M-->>V: None
+            V->>A: señal user_login_failed
+            A->>DB: INSERT Acceso FALLIDO (y BLOQUEO al 5.º intento)
+            V-->>N: «Usuario o contraseña incorrectos» e intentos que le quedan
+        else Contraseña correcta
+            M-->>V: Usuario con su rol
+            V->>A: señal user_logged_in
+            A->>DB: INSERT Acceso (ENTRADA)
+            alt Tiene contraseña temporal (debe_cambiar_clave)
+                V-->>N: Redirige a «Cambiar contraseña»
+            else
+                V-->>N: Redirige a la pantalla de inicio de su rol
+            end
+        end
+    end
+    Note over N,V: Después de 30 minutos sin usar el sistema, el middleware<br/>CierrePorInactividad cierra la sesión (Acceso INACTIVIDAD).

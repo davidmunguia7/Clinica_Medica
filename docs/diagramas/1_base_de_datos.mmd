@@ -1,0 +1,225 @@
+---
+title: Diagrama de base de datos · Sistema Clínico (SQL Server)
+---
+erDiagram
+    usuarios_usuario {
+        bigint id PK
+        nvarchar(128) password "hash PBKDF2"
+        datetimeoffset last_login "NULL"
+        bit is_superuser
+        nvarchar(150) username UK
+        nvarchar(150) first_name
+        nvarchar(150) last_name
+        nvarchar(254) email
+        bit is_staff
+        bit is_active
+        datetimeoffset date_joined
+        nvarchar(20) rol
+        bit debe_cambiar_clave
+    }
+    usuarios_acceso {
+        bigint id PK
+        datetimeoffset momento
+        nvarchar(20) tipo
+        nvarchar(150) nombre_usuario
+        nvarchar(39) ip "NULL"
+        bigint hecho_por_id FK "NULL"
+        bigint usuario_id FK "NULL"
+    }
+    pacientes_departamento {
+        bigint id PK
+        nvarchar(5) codigo UK
+        nvarchar(50) nombre UK
+    }
+    pacientes_municipio {
+        bigint id PK
+        nvarchar(60) nombre UK
+        bigint departamento_id FK
+    }
+    pacientes_distrito {
+        bigint id PK
+        nvarchar(60) nombre
+        bigint municipio_id FK
+    }
+    pacientes_paciente {
+        bigint id PK
+        nvarchar(10) tipo_documento
+        nvarchar(max) numero_documento "cifrado"
+        nvarchar(100) nombres
+        nvarchar(60) primer_apellido
+        nvarchar(60) segundo_apellido
+        nvarchar(60) apellido_casada
+        nvarchar(100) conocido_por
+        nvarchar(1) sexo
+        date fecha_nacimiento
+        nvarchar(2) nacionalidad
+        nvarchar(60) pais_origen
+        nvarchar(10) estado_civil
+        nvarchar(100) ocupacion
+        nvarchar(1) area
+        nvarchar(max) direccion "cifrado"
+        nvarchar(max) punto_referencia "cifrado"
+        nvarchar(max) telefono "cifrado"
+        nvarchar(max) telefono_alterno "cifrado"
+        nvarchar(max) correo "cifrado"
+        nvarchar(10) afiliacion
+        nvarchar(max) numero_afiliacion "cifrado"
+        nvarchar(max) nombre_madre "cifrado"
+        nvarchar(max) nombre_padre "cifrado"
+        nvarchar(max) responsable_nombre "cifrado"
+        nvarchar(10) responsable_parentesco
+        nvarchar(max) responsable_dui "cifrado"
+        nvarchar(max) responsable_telefono "cifrado"
+        nvarchar(max) datos_proporcionados_por "cifrado"
+        nvarchar(max) observaciones "cifrado"
+        bit consentimiento_datos
+        datetimeoffset fecha_consentimiento "NULL"
+        bit activo
+        nvarchar(500) texto_busqueda "nombres sin tildes"
+        datetimeoffset fecha_registro
+        datetimeoffset fecha_actualizacion
+        bigint distrito_id FK
+        bigint distrito_nacimiento_id FK "NULL"
+        bigint registrado_por_id FK "NULL"
+        nvarchar(64) documento_huella UK "HMAC del documento · NULL"
+    }
+    pacientes_historialclinico {
+        bigint id PK
+        nvarchar(20) numero_expediente UK
+        datetimeoffset fecha_apertura
+        nvarchar(max) tipo_sangre "cifrado"
+        nvarchar(max) alergias "cifrado"
+        nvarchar(max) enfermedades_cronicas "cifrado"
+        nvarchar(max) medicamentos_actuales "cifrado"
+        nvarchar(max) antecedentes_personales "cifrado"
+        nvarchar(max) antecedentes_familiares "cifrado"
+        datetimeoffset fecha_actualizacion
+        bigint paciente_id FK, UK
+    }
+    citas_cita {
+        bigint id PK
+        datetimeoffset fecha_hora
+        smallint duracion_minutos
+        nvarchar(max) motivo "cifrado"
+        nvarchar(max) notas "cifrado"
+        nvarchar(10) estado
+        datetimeoffset recordatorio_enviado "NULL"
+        datetimeoffset creada
+        datetimeoffset actualizada
+        bigint creada_por_id FK "NULL"
+        bigint medico_id FK "NULL"
+        bigint paciente_id FK
+    }
+    citas_mensajesms {
+        bigint id PK
+        nvarchar(max) telefono "cifrado"
+        nvarchar(max) texto "cifrado"
+        nvarchar(10) estado
+        nvarchar(30) proveedor
+        nvarchar(100) id_externo
+        nvarchar(max) error
+        datetimeoffset creado
+        bigint cita_id FK
+        bigint enviado_por_id FK "NULL"
+    }
+    consultas_consulta {
+        bigint id PK
+        datetimeoffset fecha
+        nvarchar(max) motivo "cifrado"
+        nvarchar(max) sintomas "cifrado"
+        nvarchar(max) diagnostico "cifrado"
+        nvarchar(max) indicaciones "cifrado"
+        datetimeoffset creada
+        datetimeoffset actualizada
+        bigint cita_id FK, UK "NULL"
+        bigint medico_id FK
+        bigint paciente_id FK
+    }
+    consultas_medicamentorecetado {
+        bigint id PK
+        nvarchar(max) nombre "cifrado"
+        nvarchar(max) dosis "cifrado"
+        nvarchar(max) frecuencia "cifrado"
+        nvarchar(max) duracion "cifrado"
+        int cantidad
+        nvarchar(max) indicaciones "cifrado"
+        nvarchar(12) estado
+        datetimeoffset entregado_en "NULL"
+        bigint consulta_id FK
+        bigint entregado_por_id FK "NULL"
+        bigint producto_id FK "NULL"
+    }
+    consultas_medicamentorecetado_movimientos {
+        bigint id PK
+        bigint medicamentorecetado_id FK
+        bigint movimiento_id FK
+    }
+    inventario_categoria {
+        bigint id PK
+        nvarchar(60) nombre UK
+        nvarchar(200) descripcion
+        smallint orden
+    }
+    inventario_producto {
+        bigint id PK
+        nvarchar(30) codigo UK
+        nvarchar(150) nombre
+        nvarchar(3) tipo
+        nvarchar(80) presentacion
+        nvarchar(30) unidad_medida
+        int stock_minimo
+        bit activo
+        datetimeoffset creado
+        datetimeoffset actualizado
+        numeric precio_venta "(10,2)"
+        bigint categoria_id FK "NULL"
+    }
+    inventario_lote {
+        bigint id PK
+        nvarchar(50) numero_lote
+        date fecha_vencimiento "NULL"
+        int cantidad_actual
+        datetimeoffset fecha_ingreso
+        bigint producto_id FK
+        numeric costo_unitario "(10,2) · NULL"
+    }
+    inventario_movimiento {
+        bigint id PK
+        nvarchar(3) tipo
+        int cantidad
+        nvarchar(200) motivo
+        datetimeoffset fecha
+        bigint lote_id FK
+        bigint usuario_id FK "NULL"
+        bigint producto_id FK
+        nvarchar(8) concepto
+        numeric precio_unitario "(10,2) · NULL"
+        bigint paciente_id FK "NULL"
+    }
+    usuarios_usuario |o--o{ usuarios_acceso : "usuario_id"
+    usuarios_usuario |o--o{ usuarios_acceso : "hecho_por_id"
+    usuarios_usuario |o--o{ pacientes_paciente : "registrado_por_id"
+    usuarios_usuario |o--o{ citas_cita : "creada_por_id"
+    usuarios_usuario |o--o{ citas_cita : "medico_id"
+    usuarios_usuario |o--o{ citas_mensajesms : "enviado_por_id"
+    usuarios_usuario ||--o{ consultas_consulta : "medico_id"
+    usuarios_usuario |o--o{ consultas_medicamentorecetado : "entregado_por_id"
+    usuarios_usuario |o--o{ inventario_movimiento : "usuario_id"
+    pacientes_departamento ||--o{ pacientes_municipio : "departamento_id"
+    pacientes_municipio ||--o{ pacientes_distrito : "municipio_id"
+    pacientes_distrito |o--o{ pacientes_paciente : "distrito_nacimiento_id"
+    pacientes_distrito ||--o{ pacientes_paciente : "distrito_id"
+    pacientes_paciente ||--|| pacientes_historialclinico : "paciente_id"
+    pacientes_paciente ||--o{ citas_cita : "paciente_id"
+    pacientes_paciente ||--o{ consultas_consulta : "paciente_id"
+    pacientes_paciente |o--o{ inventario_movimiento : "paciente_id"
+    citas_cita ||--o{ citas_mensajesms : "cita_id"
+    citas_cita |o--o| consultas_consulta : "cita_id"
+    consultas_consulta ||--o{ consultas_medicamentorecetado : "consulta_id"
+    consultas_medicamentorecetado ||--o{ consultas_medicamentorecetado_movimientos : "medicamentorecetado_id"
+    inventario_categoria |o--o{ inventario_producto : "categoria_id"
+    inventario_producto |o--o{ consultas_medicamentorecetado : "producto_id"
+    inventario_producto ||--o{ inventario_lote : "producto_id"
+    inventario_producto ||--o{ inventario_movimiento : "producto_id"
+    inventario_lote ||--o{ inventario_movimiento : "lote_id"
+    inventario_movimiento ||--o{ consultas_medicamentorecetado_movimientos : "movimiento_id"

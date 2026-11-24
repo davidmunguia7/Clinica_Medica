@@ -64,6 +64,10 @@ class BackendTwilio:
         self.sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
         self.token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
         self.numero = getattr(settings, "TWILIO_NUMERO", "")
+        # Las cuentas de prueba de Twilio no aceptan textos propios: solo sus plantillas fijas
+        # (p. ej. «sms_appointment_reminders», un recordatorio de ejemplo en inglés). Con una
+        # cuenta pagada esto se deja vacío y se manda nuestro texto.
+        self.plantilla_prueba = getattr(settings, "TWILIO_PLANTILLA_PRUEBA", "")
         if not (self.sid and self.token and self.numero):
             raise ImproperlyConfigured(
                 "Para enviar SMS con Twilio faltan TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN o "
@@ -71,7 +75,8 @@ class BackendTwilio:
             )
 
     def enviar(self, telefono, texto):
-        datos = urlencode({"To": telefono, "From": self.numero, "Body": texto}).encode()
+        cuerpo_sms = self.plantilla_prueba or texto
+        datos = urlencode({"To": telefono, "From": self.numero, "Body": cuerpo_sms}).encode()
         credenciales = base64.b64encode(f"{self.sid}:{self.token}".encode()).decode()
         peticion = Request(
             self.url.format(sid=self.sid),

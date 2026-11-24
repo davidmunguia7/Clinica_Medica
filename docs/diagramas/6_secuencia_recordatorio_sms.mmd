@@ -1,0 +1,34 @@
+---
+title: Diagrama de secuencia · Recordatorio de cita por SMS
+---
+sequenceDiagram
+    autonumber
+    actor R as Recepción
+    participant N as Navegador
+    participant V as Vista recordar<br/>(citas/views.py)
+    participant RC as Recordatorios<br/>(citas/recordatorios.py)
+    participant T as BackendTwilio<br/>(citas/sms.py)
+    participant TW as API de Twilio
+    participant DB as SQL Server
+    actor P as Paciente
+
+    R->>N: En la cita, «Enviar recordatorio ahora»
+    N->>V: POST /citas/{id}/recordar/ (permiso citas.change_cita)
+    V->>DB: SELECT cita, paciente y médico
+    alt La cita no está programada ni confirmada
+        V-->>N: «Solo se recuerdan las citas programadas o confirmadas»
+    else Cita activa
+        V->>RC: enviar_recordatorio(cita, usuario)
+        RC->>RC: Teléfono (el del responsable si es menor) y texto del mensaje
+        RC->>T: enviar(+503…, texto)
+        T->>TW: POST /Messages.json (To, From, Body)
+        TW-->>T: Identificador del mensaje o error
+        TW-)P: SMS al celular
+        T-->>RC: ResultadoSMS (ENVIADO o ERROR)
+        RC->>DB: INSERT MensajeSMS (teléfono y texto cifrados)
+        opt Sin error
+            RC->>DB: UPDATE Cita.recordatorio_enviado
+        end
+        V-->>N: «Recordatorio enviado a 7XXX-XXXX» o el detalle del error
+    end
+    Note over V,TW: El comando diario «enviar_recordatorios» hace lo mismo con todas<br/>las citas de las próximas 24 horas que aún no tienen recordatorio.

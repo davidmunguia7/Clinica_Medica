@@ -86,30 +86,35 @@ Cosas que vale la pena enseñar:
 ## SMS de verdad con Twilio (cuenta de prueba, gratis)
 
 1. Crear una cuenta en [twilio.com](https://www.twilio.com/try-twilio) y **verificar el número de
-   celular** que se va a usar (el mismo de `PRESENTACION_TELEFONO`).
-2. En la consola de Twilio, pedir el número de prueba gratuito (**Get a phone number**).
+   celular** que va a recibir los mensajes (el mismo de `PRESENTACION_TELEFONO`).
+2. En la página principal de la consola están el **Account SID**, el **Auth Token** y el
+   **número de prueba** que Twilio asigna (empieza con +1).
 3. **Permitir El Salvador:** Messaging → Settings → **Geo permissions** → marcar **El Salvador** →
    Save.
-4. Copiar el **Account SID** y el **Auth Token** (están en la página principal de la consola) y
-   agregarlos al `.env`. **El Auth Token es secreto:** no lo pongan en el chat del grupo ni en GitHub.
+4. Agregar al `.env` (el Auth Token lo pega cada quien: **es secreto**, no lo pongan en el chat
+   del grupo ni en GitHub):
 
    ```
    SMS_BACKEND=citas.sms.BackendTwilio
    TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    TWILIO_NUMERO=+1XXXXXXXXXX
-   CLINICA_TELEFONO=2222-0000
+   TWILIO_PLANTILLA_PRUEBA=sms_appointment_reminders
    ```
 
 5. Cerrar y volver a abrir `encender.bat`.
 
-Lo que hay que saber de la cuenta de prueba:
+Lo que hay que saber de la cuenta de prueba (así funciona desde 2026):
 
-- **Solo manda a números verificados.** A otros números, la cita muestra «Error al enviar».
-- **Twilio le agrega un texto al inicio** del mensaje: «Sent from your Twilio trial account».
-- El saldo de prueba es limitado, pero alcanza para varios mensajes.
+- **No acepta textos propios, solo plantillas de Twilio.** Por eso va `TWILIO_PLANTILLA_PRUEBA`:
+  el SMS llega con el recordatorio de ejemplo de Twilio, en inglés y con una fecha inventada
+  («Reminder: Appt Tue Oct 29, 3:00 PM…»). En la cita queda guardado nuestro texto en español.
+  Con una cuenta pagada se borra esa línea y llega nuestro texto.
+- **Solo manda a números verificados** y desde el número de prueba asignado. Si no, la cita
+  muestra «Error al enviar» con el detalle que da Twilio.
 - Con `SMS_BACKEND` en el `.env`, el sistema de trabajo también manda SMS de verdad, pero solo
-  cuando se usa el botón o el comando `enviar_recordatorios`.
+  cuando se usa el botón o el comando `enviar_recordatorios`. Las pruebas (`manage.py test`)
+  siempre usan el modo simulado.
 
 Más detalles de los recordatorios en [recordatorios.md](recordatorios.md).
 

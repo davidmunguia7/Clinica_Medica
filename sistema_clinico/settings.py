@@ -23,16 +23,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+def _lista(variable):
+    """'a, b,c' del .env -> ['a', 'b', 'c']."""
+    return [parte.strip() for parte in os.getenv(variable, '').split(',') if parte.strip()]
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^yqurv--3x0(60-5qmzq0zly1v-kk$@j(soh3s6t$idpyu^tcd'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# En la computadora de cada quien se trabaja como siempre (DEBUG = True y sin tocar el .env).
+# Cuando el sistema se abre desde internet (la presentación, ver docs/presentacion.md) se pone
+# DEBUG=False y se exige una SECRET_KEY propia en el .env: la de abajo está en GitHub.
+DEBUG = os.getenv('DEBUG', 'True').strip().lower() in ('1', 'true', 'si', 'sí', 'yes')
 
-ALLOWED_HOSTS = []
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        from django.core.exceptions import ImproperlyConfigured
+
+        raise ImproperlyConfigured(
+            'Con DEBUG=False hace falta SECRET_KEY en el archivo .env (ver docs/presentacion.md).'
+        )
+    SECRET_KEY = 'django-insecure-^yqurv--3x0(60-5qmzq0zly1v-kk$@j(soh3s6t$idpyu^tcd'
+
+# Direcciones desde las que se puede abrir el sistema. Vacío = solo esta computadora.
+ALLOWED_HOSTS = _lista('ALLOWED_HOSTS')
+# Para enviar formularios desde una dirección https pública (p. ej. https://*.trycloudflare.com)
+CSRF_TRUSTED_ORIGINS = _lista('CSRF_TRUSTED_ORIGINS')
 
 
 # Application definition
@@ -61,6 +75,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Sirve el CSS y las imágenes cuando DEBUG = False (la presentación)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -148,6 +164,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# WhiteNoise toma los archivos directo de cada app (no hace falta correr collectstatic)
+WHITENOISE_USE_FINDERS = True
 
 # Tailwind CSS
 TAILWIND_APP_NAME = 'theme'

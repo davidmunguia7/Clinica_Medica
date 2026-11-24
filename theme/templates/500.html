@@ -1,0 +1,20 @@
+{% load static tailwind_tags %}<!doctype html>
+{# Django usa esta página cuando algo falla y DEBUG = False. No extiende base.html a propósito: #}
+{# si el error vino de la plantilla base o de la base de datos, esta página igual tiene que salir. #}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Algo salió mal · Clínica Familiar</title>
+    {% tailwind_css %}
+</head>
+<body class="min-h-screen bg-blanco-humo text-gris-oscuro">
+    <main class="mx-auto max-w-xl px-4 py-16">
+        <div class="tarjeta p-8">
+            <h1 class="text-xl font-semibold">Algo salió mal</h1>
+            <p class="mt-2 text-slate-600">El sistema tuvo un problema al abrir esta página. Lo escrito puede no haberse guardado: revise antes de volver a intentarlo.</p>
+            <a href="/" class="btn btn-acento mt-6">Volver al inicio</a>
+        </div>
+    </main>
+</body>
+</html>

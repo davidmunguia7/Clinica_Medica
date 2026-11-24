@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -218,6 +219,12 @@ SMS_BACKEND = os.getenv('SMS_BACKEND', 'citas.sms.BackendSimulado')
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
 TWILIO_NUMERO = os.getenv('TWILIO_NUMERO', '')
+# Solo con la cuenta de prueba de Twilio: nombre de su plantilla fija (sms_appointment_reminders)
+TWILIO_PLANTILLA_PRUEBA = os.getenv('TWILIO_PLANTILLA_PRUEBA', '')
+# Las pruebas (manage.py test) nunca mandan SMS de verdad, aunque el .env tenga Twilio configurado
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    SMS_BACKEND = 'citas.sms.BackendSimulado'
+    TWILIO_PLANTILLA_PRUEBA = ''
 
 # Datos de la clínica que aparecen en los mensajes a los pacientes
 CLINICA_NOMBRE = 'Clínica Familiar'

@@ -197,6 +197,22 @@ class TwilioTests(TestCase):
         self.assertEqual(parse_qs(peticion.data.decode())["To"], ["+50371234567"])
         esperado = base64.b64encode(b"AC123:token-de-prueba").decode()
         self.assertEqual(peticion.get_header("Authorization"), f"Basic {esperado}")
+        self.assertEqual(parse_qs(peticion.data.decode())["Body"], ["Hola"])
+
+    @override_settings(TWILIO_PLANTILLA_PRUEBA="sms_appointment_reminders")
+    def test_cuenta_de_prueba_manda_la_plantilla_de_twilio(self):
+        # Las cuentas de prueba de Twilio solo aceptan sus plantillas fijas, no textos propios
+        with mock.patch("citas.sms.urlopen", return_value=RespuestaFalsa(b'{"sid": "SM124"}')) as urlopen:
+            resultado = BackendTwilio().enviar("+50371234567", "Hola")
+        self.assertEqual(resultado.estado, "ENVIADO")
+        datos = parse_qs(urlopen.call_args.args[0].data.decode())
+        self.assertEqual(datos["Body"], ["sms_appointment_reminders"])
+        self.assertEqual(datos["From"], ["+15005550006"])
+
+    def test_las_pruebas_nunca_mandan_sms_de_verdad(self):
+        from django.conf import settings
+
+        self.assertEqual(settings.SMS_BACKEND, "citas.sms.BackendSimulado")
 
     def test_twilio_responde_error(self):
         error = HTTPError("https://api.twilio.com", 400, "Bad Request", {}, BytesIO(b'{"message": "Numero invalido"}'))
